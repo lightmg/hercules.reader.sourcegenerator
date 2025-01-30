@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Vostok.Hercules.Serializer.Sample</RootNamespace>
+        <OutputType>exe</OutputType>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Vostok.Hercules.Serializer.Generator\Vostok.Hercules.Serializer.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="DDD.UbiquitousLanguageRegistry.txt"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Vostok.Hercules.Client.Abstractions" Version="0.1.13" />
+    </ItemGroup>
+
+</Project>

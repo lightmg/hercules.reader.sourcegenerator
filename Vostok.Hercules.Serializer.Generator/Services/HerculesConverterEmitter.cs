@@ -1,0 +1,105 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extensions;
+using Vostok.Hercules.Serializer.Generator.Core.Primitives;
+using Vostok.Hercules.Serializer.Generator.Core.Writer;
+using Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
+using Vostok.Hercules.Serializer.Generator.Extensions;
+using Vostok.Hercules.Serializer.Generator.Models;
+using TypeKind = Vostok.Hercules.Serializer.Generator.Core.Primitives.TypeKind;
+
+namespace Vostok.Hercules.Serializer.Generator.Services;
+
+public static class HerculesConverterEmitter
+{
+    private const string Namespace = "Vostok.Hercules.Client.Abstractions.Events";
+    private const string DummyBuilderType = $"{Namespace}.DummyHerculesTagsBuilder";
+    private const string TagsBuilderInterfaceType = $"{Namespace}.IHerculesTagsBuilder";
+
+    private static string EventBuilderInterfaceType(string type) => $"{Namespace}.IHerculesEventBuilder<{type}>";
+
+    public static TypeBuilder CreateType(EventMapping eventMap)
+    {
+        var targetTypeFullName = eventMap.Type.ToString();
+        var builder = new TypeBuilder(
+            ns: eventMap.Type.ContainingNamespace.ToString(),
+            name: eventMap.Type.Name + "Builder",
+            baseType: DummyBuilderType
+        )
+        {
+            Accessibility = Accessibility.Public,
+            Kind = TypeKind.Class,
+            Interfaces = { EventBuilderInterfaceType(targetTypeFullName) },
+            Properties = { PropertyBuilder.ReadOnlyField("Current", targetTypeFullName, Accessibility.Public) }
+        }
+        .WithConstructor();
+
+        builder.AddPropertiesCtorInit(p => p.Name == "Current");
+        builder.Methods.AddRange(CreateAddValueMethods(eventMap));
+        builder.Methods.Add(CreateBuildEventMethod(eventMap));
+        builder.Methods.Add(CreateSetTimestampMethod(eventMap));
+
+        return builder;
+    }
+
+    private static IEnumerable<MethodBuilder> CreateAddValueMethods(EventMapping eventMap) =>
+        eventMap.Entries
+            .GroupBy(x => x.Source.Type, (sourceType, entries) => (
+                KeyType: sourceType,
+                SameKeyEntries: entries.GroupBy(y => y.Source.Key)
+            ), SymbolEqualityComparer.Default)
+            .Select(group => new MethodBuilder("AddValue")
+                {
+                    Accessibility = Accessibility.Public,
+                    Parameters =
+                    {
+                        new("key", ReferencedType.From<string>()),
+                        new("value", ReferencedType.From(group.KeyType!.ToString()))
+                    },
+                    ReturnType = TagsBuilderInterfaceType,
+                }
+                .PrependEmitBody(w => WriteAddValueMethod(w, group.SameKeyEntries))
+            );
+
+    private static MethodBuilder CreateBuildEventMethod(EventMapping mapping) =>
+        new MethodBuilder("BuildEvent")
+        {
+            Accessibility = Accessibility.Public,
+            ReturnType = mapping.Type.ToString(),
+            EmitBody = writer => writer.AppendLine("return this.Current;") // TODO add validations for non-optional tags
+        };
+
+    private static MethodBuilder CreateSetTimestampMethod(EventMapping mapping) =>
+        new MethodBuilder("SetTimestamp")
+        {
+            Accessibility = Accessibility.Public,
+            ReturnType = EventBuilderInterfaceType(mapping.Type.ToString()),
+            Parameters = { new ParameterBuilder("timestamp", ReferencedType.From<DateTimeOffset>()) },
+            EmitBody = writer => writer.AppendLine("return this;") // todo respect TimeStamp
+        };
+
+    private static void WriteAddValueMethod(CodeWriter writer, IEnumerable<IGrouping<string, TagMap>> entriesByKey) =>
+        writer
+            .WriteJoin(entriesByKey, "", (entries, ifWriter) => ifWriter
+                .AppendLine($"""if (key == "{entries.Key}")""") // todo else if
+                .WriteCodeBlock(w => w.WriteJoin(entries, "\n", (e, ew) => WritePropertyAssignment(ew, e)))
+            )
+            .AppendLine("return this;");
+
+    private static void WritePropertyAssignment(CodeWriter writer, TagMap map)
+    {
+        writer.Append($"this.Current.{map.Target.Name} = ");
+        if (map.Config.ConverterMethod is { } convertMethod)
+            writer
+                .Append(convertMethod.ContainingType.ToString())
+                .Append('.')
+                .Append(convertMethod.Name)
+                .Append("(value)");
+        else writer.Append("value"); // TODO respect converter
+
+        writer.AppendLine(';');
+    }
+}
