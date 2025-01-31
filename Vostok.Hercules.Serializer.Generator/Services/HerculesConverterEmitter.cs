@@ -104,7 +104,7 @@ public static class HerculesConverterEmitter
             EmitBody = writer => writer
                 .WriteJoin(mapping.Entries.Where(e => !e.Target.IsNullable), null, (tag, w) => w
                     .AppendLine($"if (this.Current.{tag.Target.Name} == null)").WriteCodeBlock(bw => bw
-                        .AppendLine($"throw new HerculesValidationException(\"{tag.Target.Name}\")")
+                        .WriteThrowHerculesValidationException(tag.Target.Name)
                     ))
                 .AppendLine("return this.Current;")
         };
@@ -117,6 +117,9 @@ public static class HerculesConverterEmitter
             Parameters = { new ParameterBuilder("timestamp", ReferencedType.From<DateTimeOffset>()) },
             EmitBody = writer => writer.AppendLine("return this;") // todo respect TimeStamp
         };
+
+    private static CodeWriter WriteThrowHerculesValidationException(this CodeWriter writer, string propertyName) =>
+        writer.AppendLine($"throw new {ExposedApi.ValidationExceptionType.FullName}(\"{propertyName}\");");
 
     private static void WriteAddValueMethod(CodeWriter writer, IEnumerable<IGrouping<string, TagMap>> entriesByKey) =>
         writer
@@ -138,7 +141,7 @@ public static class HerculesConverterEmitter
                 .Append('.')
                 .Append(convertMethod.Name)
                 .Append("(value)");
-        else writer.Append("value"); // TODO respect converter
+        else writer.Append("value");
 
         writer.AppendLine(';');
     }

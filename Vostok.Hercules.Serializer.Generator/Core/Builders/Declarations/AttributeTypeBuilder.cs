@@ -19,7 +19,7 @@ public class AttributeTypeBuilder(string ns, string name)
     private string GetAttributeUsageRawSrc() =>
         string.Format(
             "{0}({1}, AllowMultiple = {2}, Inherited = {3})",
-            typeof(AttributeUsageAttribute).FullName, GetUsageValue(), AllowMultiple, Inherited
+            typeof(AttributeUsageAttribute).FullName, GetUsageValue(), BoolString(AllowMultiple), BoolString(Inherited)
         );
 
     private string GetUsageValue()
@@ -29,4 +29,7 @@ public class AttributeTypeBuilder(string ns, string name)
             .ToString("G")
             .Replace(", ", $"| {typeFullName}");
     }
+
+    private static string BoolString(bool flag) => 
+        flag ? "true" : "false";
 }

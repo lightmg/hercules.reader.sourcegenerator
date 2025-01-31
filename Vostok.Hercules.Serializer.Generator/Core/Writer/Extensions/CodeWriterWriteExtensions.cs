@@ -104,7 +104,8 @@ public static class CodeWriterWriteExtensions
             .WriteCodeBlock(writeContent);
 
     public static CodeWriter WriteAttributes(this CodeWriter writer, IEnumerable<string> attributes) =>
-        writer.WriteJoin(attributes, "\n", (attr, w) => w.AppendAttribute(attr));
+        writer
+            .WriteJoin(attributes, "\n", (attr, w) => w.AppendAttribute(attr), append: w => w.AppendLine());
 
     public static CodeWriter WriteCommentLine(this CodeWriter writer, string comment) =>
         writer.Append("//").AppendLine(comment);
