@@ -126,7 +126,7 @@ public static class CodeWriterWriteExtensions
         );
 
     public static CodeWriter WriteConstraints(this CodeWriter writer, IEnumerable<GenericTypeBuilder> generics) =>
-        writer.WriteJoin(generics, "\n",
+        writer.WriteJoin(generics.Where(g => g.AllConstraints.Any()), "\n",
             (generic, gw) => gw.AppendJoin(", ", generic.AllConstraints),
             prepend: w => w.Append(" where ")
         );
