@@ -85,6 +85,11 @@ public static class CodeWriterWriteExtensions
                 .AppendAccessibility(builder.Accessibility).Append(" ")
                 .Append(GetTypeKind(builder)).Append(" ")
                 .Append(builder.Name)
+                .WhenOfType<EnumBuilder>(builder, (e, ew) => ew
+                    .WriteBaseTypes([e.BaseType]).AppendLine()
+                    .WriteCodeBlock(bw => bw.WriteJoin(e.Values, null,
+                        (entry, vw) => vw.Append(entry.Key).Append(" = ").Append(entry.Value.ToString()).AppendLine(",")
+                    )))
                 .WhenOfType<StatefulTypeBuilder>(builder, (s, w) => w
                     .WriteGenericArgs(s.Generics).Append(" ")
                     .WriteBaseTypes(s.Interfaces.PrependIfNotNull(s is ClassBuilder cb ? cb.BaseType : null))
@@ -212,6 +217,7 @@ public static class CodeWriterWriteExtensions
     private static string GetTypeKind(ITypeBuilder builder) =>
         builder switch
         {
+            EnumBuilder => "enum",
             ClassBuilder => "class",
             InterfaceBuilder => "interface",
             StructBuilder { IsMutable: true } => "struct",
