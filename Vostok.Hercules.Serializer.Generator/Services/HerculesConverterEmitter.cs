@@ -80,17 +80,18 @@ public static class HerculesConverterEmitter
 
     private static IEnumerable<MethodBuilder> CreateAddValueMethods(EventMapping eventMap) =>
         eventMap.Entries
+            .Where(e => e.Source is TagMapKeySource)
             .GroupBy(x => x.Source.Type, (sourceType, entries) => (
                 KeyType: sourceType,
-                SameKeyEntries: entries.GroupBy(y => y.Source.Key)
-            ), SymbolEqualityComparer.Default)
+                SameKeyEntries: entries.GroupBy(y => ((TagMapKeySource)y.Source).Key)
+            ))
             .Select(group => new MethodBuilder("AddValue")
                 {
                     Accessibility = Accessibility.Public,
                     Parameters =
                     {
                         new("key", ReferencedType.From<string>()),
-                        new("value", ReferencedType.From(group.KeyType!.ToString()))
+                        new("value", ReferencedType.From(group.KeyType.ToString()))
                     },
                     ReturnType = TagsBuilderInterfaceType,
                 }
@@ -115,8 +116,14 @@ public static class HerculesConverterEmitter
         {
             Accessibility = Accessibility.Public,
             ReturnType = EventBuilderInterfaceType(mapping.Type.ToString()),
-            Parameters = { new ParameterBuilder("timestamp", ReferencedType.From<DateTimeOffset>()) },
-            EmitBody = writer => writer.AppendLine("return this;") // todo respect TimeStamp
+            Parameters = { new ParameterBuilder("value", ReferencedType.From<DateTimeOffset>()) },
+            EmitBody = writer => writer
+                .WriteJoin(
+                    mapping.Entries.Where(e => e.Source is TagMapSpecialSource { Kind: SpecialTagKind.Timestamp }),
+                    "\n",
+                    (map, w) => WriteResultPropertyAssignment(w, map)
+                )
+                .AppendLine("return this;")
         };
 
     private static CodeWriter WriteThrowHerculesValidationException(this CodeWriter writer, string propertyName) =>

@@ -20,4 +20,6 @@ public abstract class TypeBuilder : ITypeBuilder
     public Accessibility Accessibility { get; set; } = Accessibility.Public;
 
     public virtual IEnumerable<string> Attributes => [];
+
+    public override string ToString() => FullName;
 }

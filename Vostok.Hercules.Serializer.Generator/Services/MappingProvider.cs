@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Models;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
@@ -36,6 +39,9 @@ internal static class MappingProvider
 
     private static void ValidateTagMap(TagMap map, ISymbol member, MappingGeneratorContext ctx)
     {
+        if (map.Source is not TagMapKeySource) 
+            return;
+
         if (!TypeUtilities.IsHerculesPrimitive(map.Source.Type))
             ctx.AddDiagnostic(DiagnosticDescriptors.UnknownType, member, map.Source.Type);
     }
@@ -57,22 +63,50 @@ internal static class MappingProvider
             return false;
         }
 
-        var tagKey = matchedAttributes[0].ConstructorArguments[0].Value!.ToString();
-
         var target = TagMapTarget.Create(memberSymbol);
         var config = CreateMapConfiguration(target, ctx);
-        var source = CreateSource(config, target, tagKey);
+        var source = CreateSource(config, target, matchedAttributes[0].ConstructorArguments, ctx);
+        if (source == null)
+        {
+            tagMap = null!;
+            return false;
+        }
 
         tagMap = new TagMap(source, target, config);
         return true;
     }
 
-    private static TagMapSource CreateSource(TagMapConfiguration config, TagMapTarget target, string tagKey)
+    private static ITagMapSource? CreateSource(
+        TagMapConfiguration config,
+        TagMapTarget target,
+        ImmutableArray<TypedConstant> ctorArgs,
+        MappingGeneratorContext ctx
+    )
     {
+        if (ctorArgs.Length != 1)
+            return null; // not reporting diag here because build is already broken at this point
+
+        var ctorArg = ctorArgs[0];
+
+        if (TypeUtilities.IsEnum(ctorArg))
+        {
+            if (TypeUtilities.TryParseEnum<SpecialTagKind>(ctorArg, out var tagKind))
+                return new TagMapSpecialSource(tagKind, typeof(DateTimeOffset));
+
+            ctx.AddDiagnostic(DiagnosticDescriptors.BadAnnotationArgument, target.Symbol,
+                ExposedApi.HerculesTagAttribute, 0, 
+                $"Value '{ctorArg.Value}' is invalid for enum {ExposedApi.SpecialTagEnum.FullName}"
+            );
+            return null;
+        }
+
+        if (ctorArg.Value is not string tagKey)
+            return null; // not reporting diag here because build is already broken at this point
+
         var sourceType = InferSourceType(config, target.Type);
         return TypeUtilities.IsNullable(sourceType, out var underlyingType)
-            ? new TagMapSource(tagKey, underlyingType, true)
-            : new TagMapSource(tagKey, sourceType, false);
+            ? new TagMapKeySource(tagKey, ReferencedType.From(underlyingType))
+            : new TagMapKeySource(tagKey, ReferencedType.From(sourceType));
     }
 
     private static TagMapConfiguration CreateMapConfiguration(TagMapTarget target, MappingGeneratorContext ctx)
@@ -95,7 +129,7 @@ internal static class MappingProvider
         }
 
         if (GetConverterInfo(matchedAttributes[0]) is var (containingType, methodName) &&
-            GetConvertMethod(target, containingType, methodName, ctx) is {} convertMethod)
+            GetConvertMethod(target, containingType, methodName, ctx) is { } convertMethod)
             return new TagMapConfiguration(convertMethod);
 
         return default;

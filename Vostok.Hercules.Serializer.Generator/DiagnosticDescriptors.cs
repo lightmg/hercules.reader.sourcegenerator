@@ -72,4 +72,13 @@ public static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true
     );
+
+    public static DiagnosticDescriptor BadAnnotationArgument => new DiagnosticDescriptor(
+        id: "VHSG07",
+        title: "Annotation argument is out of range",
+        messageFormat: "Argument for annotation '{0}' at index {1} has invalid value: {2}",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true
+    );
 }

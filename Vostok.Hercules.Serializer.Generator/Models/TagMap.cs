@@ -2,11 +2,11 @@
 
 public class TagMap
 {
-    public readonly TagMapSource Source;
+    public readonly ITagMapSource Source;
     public readonly TagMapTarget Target;
     public readonly TagMapConfiguration Config;
 
-    public TagMap(TagMapSource source, TagMapTarget target, TagMapConfiguration config)
+    public TagMap(ITagMapSource source, TagMapTarget target, TagMapConfiguration config)
     {
         Source = source;
         Target = target;

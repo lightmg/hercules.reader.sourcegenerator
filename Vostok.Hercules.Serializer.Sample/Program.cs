@@ -9,7 +9,7 @@ public static class Program
 {
     public static void Main(string[] args)
     {
-        var builder = new UserBuilder(new());
+        var builder = new UserBuilder(new(), new());
     }
 
     public class EventBuilder : DummyHerculesTagsBuilder, IHerculesEventBuilder<User>

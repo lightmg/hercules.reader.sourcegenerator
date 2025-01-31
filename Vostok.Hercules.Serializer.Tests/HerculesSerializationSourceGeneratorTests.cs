@@ -23,6 +23,9 @@ public class HerculesSerializationSourceGeneratorTests
         [GenerateHerculesReader]
         public class Model 
         {
+            [HerculesTag(SpecialTagKind.Timestamp)]
+            public DateTimeOffset Timestamp {get;set;}
+            
             [HerculesTag("h"), HerculesConverter(typeof(StaticConverters), "Convert"]
             public int? NullableInt {get;set;}
             

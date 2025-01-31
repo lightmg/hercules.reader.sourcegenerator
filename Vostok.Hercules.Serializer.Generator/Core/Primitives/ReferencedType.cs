@@ -14,13 +14,13 @@ public readonly struct ReferencedType(string fullName) : IEquatable<ReferencedTy
         FullName;
 
     public bool Equals(ReferencedType other) =>
-        FullName == other.FullName;
+        string.Equals(FullName, other.FullName, StringComparison.Ordinal);
 
     public override bool Equals(object? obj) =>
         obj is ReferencedType other && Equals(other);
 
     public override int GetHashCode() =>
-        FullName.GetHashCode();
+        StringComparer.Ordinal.GetHashCode(FullName);
 
     public static bool operator ==(ReferencedType left, ReferencedType right) =>
         left.Equals(right);
@@ -37,7 +37,26 @@ public readonly struct ReferencedType(string fullName) : IEquatable<ReferencedTy
         From(type.FullName!);
 
     public static ReferencedType From(ITypeSymbol type) =>
-        From(type.ToString());
+        type.SpecialType switch
+        {
+            SpecialType.System_Object => typeof(object),
+            SpecialType.System_Void => Void,
+            SpecialType.System_Boolean => typeof(bool),
+            SpecialType.System_Char => typeof(char),
+            SpecialType.System_SByte => typeof(sbyte),
+            SpecialType.System_Byte => typeof(byte),
+            SpecialType.System_Int16 => typeof(short),
+            SpecialType.System_UInt16 => typeof(ushort),
+            SpecialType.System_Int32 => typeof(int),
+            SpecialType.System_UInt32 => typeof(uint),
+            SpecialType.System_Int64 => typeof(long),
+            SpecialType.System_UInt64 => typeof(ulong),
+            SpecialType.System_Decimal => typeof(decimal),
+            SpecialType.System_Single => typeof(float),
+            SpecialType.System_Double => typeof(double),
+            SpecialType.System_String => typeof(string),
+            _ => From(type.ToString())
+        };
 
     public static ReferencedType From(ITypeBuilder typeBuilder) =>
         From(typeBuilder.FullName);

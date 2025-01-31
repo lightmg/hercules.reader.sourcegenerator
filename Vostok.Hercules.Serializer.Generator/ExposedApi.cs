@@ -7,6 +7,7 @@ using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extensions;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Types.Abstract;
+using Vostok.Hercules.Serializer.Generator.Models;
 
 namespace Vostok.Hercules.Serializer.Generator;
 
@@ -19,6 +20,9 @@ internal static class ExposedApi
      */
 
     private const string Namespace = "Vostok.Hercules.Serializer.Generator";
+
+    public static readonly EnumBuilder SpecialTagEnum = 
+        EnumBuilder.CreateFrom<SpecialTagKind>(Namespace);
 
     public static readonly AttributeTypeBuilder GenerateHerculesReaderAttribute =
         new AttributeTypeBuilder(Namespace, nameof(GenerateHerculesReaderAttribute))
@@ -42,10 +46,12 @@ internal static class ExposedApi
 
     public static readonly AttributeTypeBuilder HerculesTagAttribute =
         new AttributeTypeBuilder(Namespace, nameof(HerculesTagAttribute))
-        {
-            Accessibility = Accessibility.Internal,
-            Usage = AttributeTargets.Property | AttributeTargets.Field
-        }.AddConstructor(ctor => ctor.Parameters.Add(new("key", typeof(string))));
+            {
+                Accessibility = Accessibility.Internal,
+                Usage = AttributeTargets.Property | AttributeTargets.Field
+            }
+            .AddConstructor(ctor => ctor.Parameters.Add(new("key", typeof(string))))
+            .AddConstructor(ctor => ctor.Parameters.Add(new("specialTag", SpecialTagEnum)));
 
     public static readonly InterfaceBuilder HerculesConverterType =
         new InterfaceBuilder(Namespace, "IHerculesConverter")
