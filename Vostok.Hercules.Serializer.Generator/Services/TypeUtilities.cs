@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System;
+using Microsoft.CodeAnalysis;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
@@ -17,6 +18,15 @@ public static class TypeUtilities
 
         underlying = type;
         return type.NullableAnnotation == NullableAnnotation.Annotated;
+    }
+
+    public static bool HasParameterlessCtor(INamedTypeSymbol symbol, Func<IMethodSymbol, bool>? predicate = null)
+    {
+        foreach (var ctor in symbol.Constructors)
+            if (!ctor.IsStatic && ctor.Parameters.Length == 0 && predicate?.Invoke(ctor) is not false)
+                return true;
+
+        return false;
     }
 
     public static bool IsHerculesPrimitive(ITypeSymbol symbol) =>

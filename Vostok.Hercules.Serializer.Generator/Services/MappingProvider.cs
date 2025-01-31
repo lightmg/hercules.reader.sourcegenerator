@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using Vostok.Hercules.Serializer.Generator.Extensions;
 using Vostok.Hercules.Serializer.Generator.Models;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
@@ -14,21 +12,32 @@ internal static class MappingProvider
         IEnumerable<ISymbol> members,
         MappingGeneratorContext ctx)
     {
-        var result = new EventMapping(containingType);
-        // TODO ensure parameterless ctor
+        var mapping = new EventMapping(containingType);
 
         foreach (var member in members)
         {
             if (!TryCreateMap(member, ctx, out var map))
                 continue;
 
-            result.Entries.Add(map);
+            mapping.Entries.Add(map);
 
-            if (!TypeUtilities.IsHerculesPrimitive(map.Source.Type))
-                ctx.AddDiagnostic(DiagnosticDescriptors.UnknownType, member, map.Source.Type);
+            ValidateTagMap(map, member, ctx);
         }
 
-        return result;
+        ValidateMapping(mapping, ctx);
+        return mapping;
+    }
+
+    private static void ValidateMapping(EventMapping mapping, MappingGeneratorContext ctx)
+    {
+        if (!TypeUtilities.HasParameterlessCtor(mapping.Type, c => c.DeclaredAccessibility >= Accessibility.Internal))
+            ctx.AddDiagnostic(DiagnosticDescriptors.MissingParameterlessCtor, mapping.Type, mapping.Type.ToString());
+    }
+
+    private static void ValidateTagMap(TagMap map, ISymbol member, MappingGeneratorContext ctx)
+    {
+        if (!TypeUtilities.IsHerculesPrimitive(map.Source.Type))
+            ctx.AddDiagnostic(DiagnosticDescriptors.UnknownType, member, map.Source.Type);
     }
 
     private static bool TryCreateMap(ISymbol memberSymbol, MappingGeneratorContext ctx, out TagMap tagMap)

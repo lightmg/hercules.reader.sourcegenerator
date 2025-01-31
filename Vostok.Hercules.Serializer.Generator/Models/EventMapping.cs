@@ -7,12 +7,12 @@ namespace Vostok.Hercules.Serializer.Generator.Models;
 
 public class EventMapping : IEquatable<EventMapping>
 {
-    public EventMapping(ITypeSymbol type)
+    public EventMapping(INamedTypeSymbol type)
     {
         Type = type;
     }
 
-    public ITypeSymbol Type { get; }
+    public INamedTypeSymbol Type { get; }
 
     public IList<TagMap> Entries { get; } = [];
 

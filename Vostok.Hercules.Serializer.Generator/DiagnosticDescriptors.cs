@@ -14,6 +14,7 @@ public static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true
     );
+
     public static DiagnosticDescriptor UnknownType => new DiagnosticDescriptor(
         id: "VHSG01",
         title: "Unknown hercules tag type",
@@ -58,6 +59,15 @@ public static class DiagnosticDescriptors
         title: "Converter method should be static",
         messageFormat: "Non-static converter methods are not supported yet. " +
                        "Consider making method '{0}' in type '{1}' static, or choose different one.",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true
+    );
+
+    public static DiagnosticDescriptor MissingParameterlessCtor => new DiagnosticDescriptor(
+        id: "VHSG06",
+        title: "Missing parameterless constructor",
+        messageFormat: "Type '{0}' should have accessible parameterless constructor",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true
