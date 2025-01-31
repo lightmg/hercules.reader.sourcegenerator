@@ -12,7 +12,7 @@ using Vostok.Hercules.Serializer.Generator.Core.Writer;
 using Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
 using Vostok.Hercules.Serializer.Generator.Extensions;
 using Vostok.Hercules.Serializer.Generator.Models;
-using TypeKind = Vostok.Hercules.Serializer.Generator.Core.Primitives.TypeKind;
+using Vostok.Hercules.Serializer.Generator.Models.Sources;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
@@ -22,7 +22,7 @@ public static class HerculesConverterEmitter
     private const string DummyBuilderType = $"{Namespace}.DummyHerculesTagsBuilder";
     private const string TagsBuilderInterfaceType = $"{Namespace}.IHerculesTagsBuilder";
 
-    private static string EventBuilderInterfaceType(string type) => $"{Namespace}.IHerculesEventBuilder<{type}>";
+    public static string EventBuilderInterfaceType(string type) => $"{Namespace}.IHerculesEventBuilder<{type}>";
 
     public static ClassBuilder CreateType(EventMapping eventMap)
     {
@@ -80,10 +80,10 @@ public static class HerculesConverterEmitter
 
     private static IEnumerable<MethodBuilder> CreateAddValueMethods(EventMapping eventMap) =>
         eventMap.Entries
-            .Where(e => e.Source is TagMapKeySource)
+            .Where(e => e.Source is TagMapFlatSource)
             .GroupBy(x => x.Source.Type, (sourceType, entries) => (
                 KeyType: sourceType,
-                SameKeyEntries: entries.GroupBy(y => ((TagMapKeySource)y.Source).Key)
+                SameKeyEntries: entries.GroupBy(y => ((TagMapFlatSource)y.Source).Key)
             ))
             .Select(group => new MethodBuilder("AddValue")
                 {
@@ -119,7 +119,7 @@ public static class HerculesConverterEmitter
             Parameters = { new ParameterBuilder("value", ReferencedType.From<DateTimeOffset>()) },
             EmitBody = writer => writer
                 .WriteJoin(
-                    mapping.Entries.Where(e => e.Source is TagMapSpecialSource { Kind: SpecialTagKind.Timestamp }),
+                    mapping.Entries.Where(e => e.Source is TagMapTimestampSource),
                     "\n",
                     (map, w) => WriteResultPropertyAssignment(w, map)
                 )

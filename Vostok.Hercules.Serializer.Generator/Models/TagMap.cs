@@ -1,4 +1,6 @@
-﻿namespace Vostok.Hercules.Serializer.Generator.Models;
+﻿using Vostok.Hercules.Serializer.Generator.Models.Sources;
+
+namespace Vostok.Hercules.Serializer.Generator.Models;
 
 public class TagMap
 {

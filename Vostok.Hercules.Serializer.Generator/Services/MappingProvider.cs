@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Models;
+using Vostok.Hercules.Serializer.Generator.Models.Sources;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
@@ -19,11 +19,11 @@ internal static class MappingProvider
 
         foreach (var member in members)
         {
-            if (!TryCreateMap(member, ctx, out var map))
+            var map = CreateMapOrNull(member, ctx);
+            if (map is null)
                 continue;
 
             mapping.Entries.Add(map);
-
             ValidateTagMap(map, member, ctx);
         }
 
@@ -39,108 +39,55 @@ internal static class MappingProvider
 
     private static void ValidateTagMap(TagMap map, ISymbol member, MappingGeneratorContext ctx)
     {
-        if (map.Source is not TagMapKeySource) 
+        if (map.Source is not TagMapFlatSource)
             return;
 
         if (!TypeUtilities.IsHerculesPrimitive(map.Source.Type))
             ctx.AddDiagnostic(DiagnosticDescriptors.UnknownType, member, map.Source.Type);
     }
 
-    private static bool TryCreateMap(ISymbol memberSymbol, MappingGeneratorContext ctx, out TagMap tagMap)
+    private static TagMap? CreateMapOrNull(ISymbol symbol, MappingGeneratorContext ctx)
     {
-        var matchedAttributes = memberSymbol.GetAttributes()
-            .Where(a => a.AttributeClass?.ToString() == ExposedApi.HerculesTagAttribute.FullName)
-            .ToArray();
-
-        if (matchedAttributes.Length != 1)
-        {
-            ctx.AddDiagnostic(DiagnosticDescriptors.DuplicatedAnnotation,
-                memberSymbol,
-                ExposedApi.HerculesTagAttribute.FullName
-            );
-
-            tagMap = null!;
-            return false;
-        }
-
-        var target = TagMapTarget.Create(memberSymbol);
+        var target = TagMapTarget.Create(symbol);
         var converter = CreateConverter(target, ctx);
-        var source = CreateSource(converter, target, matchedAttributes[0].ConstructorArguments, ctx);
-        if (source == null)
-        {
-            tagMap = null!;
-            return false;
-        }
 
-        tagMap = new TagMap(source, target, converter);
-        return true;
+        if (AttributeFinder.FindAttribute(symbol, ExposedApi.HerculesTimestampTagAttribute, ctx))
+            return CreateTimestampMap(target, converter, ctx);
+
+        if (AttributeFinder.TryGetAttributeArgs(symbol, ExposedApi.HerculesTagAttribute, ctx, out var args))
+            return args.Length == 1 && args[0] is string tagKey ? CreateFlatMap(target, tagKey, converter) : null;
+
+        return null;
     }
 
-    private static ITagMapSource? CreateSource(
-        TagMapConverter? converter,
-        TagMapTarget target,
-        ImmutableArray<TypedConstant> ctorArgs,
-        MappingGeneratorContext ctx
-    )
+    private static TagMap CreateFlatMap(TagMapTarget target, string tagKey, TagMapConverter? converter)
     {
-        if (ctorArgs.Length != 1)
-            return null; // not reporting diag here because build is already broken at this point
-
-        var ctorArg = ctorArgs[0];
-
-        if (TypeUtilities.IsEnum(ctorArg))
-        {
-            if (!TypeUtilities.TryParseEnum<SpecialTagKind>(ctorArg, out var tagKind))
-            {
-                ctx.AddDiagnostic(DiagnosticDescriptors.BadAnnotationArgument, target.Symbol,
-                    ExposedApi.HerculesTagAttribute, 0,
-                    $"Value '{ctorArg.Value}' is invalid for enum {ExposedApi.SpecialTagEnum.FullName}"
-                );
-                return null;
-            }
-
-            if (converter.HasValue && converter.Value.InType != typeof(DateTimeOffset))
-                ctx.AddDiagnostic(DiagnosticDescriptors.InvalidTimestampTagType, target.Symbol,
-                    typeof(DateTimeOffset), converter.Value.InType
-                );
-
-            return new TagMapSpecialSource(tagKind, typeof(DateTimeOffset));
-        }
-
-        if (ctorArg.Value is not string tagKey)
-            return null; // not reporting diag here because build is already broken at this point
-
         var sourceType = InferSourceType(converter, target.Type);
-        return TypeUtilities.IsNullable(sourceType, out var underlyingType)
-            ? new TagMapKeySource(tagKey, ReferencedType.From(underlyingType))
-            : new TagMapKeySource(tagKey, ReferencedType.From(sourceType));
+        var source = TypeUtilities.IsNullable(sourceType, out var underlyingType)
+            ? new TagMapFlatSource(tagKey, ReferencedType.From(underlyingType))
+            : new TagMapFlatSource(tagKey, ReferencedType.From(sourceType));
+
+        return new TagMap(source, target, converter);
     }
 
-    private static TagMapConverter? CreateConverter(TagMapTarget target, MappingGeneratorContext ctx)
+    private static TagMap CreateTimestampMap(TagMapTarget target, TagMapConverter? converter,
+        MappingGeneratorContext ctx)
     {
-        var matchedAttributes = target.Symbol.GetAttributes()
-            .Where(a => a.AttributeClass?.ToString() == ExposedApi.HerculesConverterAttribute.FullName)
-            .ToArray();
-
-        if (matchedAttributes.Length == 0)
-            return default;
-
-        if (matchedAttributes.Length > 1)
-        {
-            ctx.AddDiagnostic(
-                DiagnosticDescriptors.DuplicatedAnnotation,
-                target.Symbol,
-                ExposedApi.HerculesConverterAttribute.FullName
+        if (converter.HasValue && converter.Value.InType != typeof(DateTimeOffset))
+            ctx.AddDiagnostic(DiagnosticDescriptors.InvalidTimestampTagType, target.Symbol,
+                typeof(DateTimeOffset), converter.Value.InType
             );
-            return default;
-        }
 
-        if (GetConverterInfo(matchedAttributes[0]) is var (containingType, methodName) &&
-            GetConvertMethod(target, containingType, methodName, ctx) is { } convertMethod)
-            return new TagMapConverter(convertMethod);
-
-        return default;
+        var source = new TagMapTimestampSource();
+        return new TagMap(source, target, converter);
     }
+
+    private static TagMapConverter? CreateConverter(TagMapTarget target, MappingGeneratorContext ctx) =>
+        AttributeFinder.TryGetAttribute(target.Symbol, ExposedApi.HerculesConverterAttribute, ctx, out var attribute) &&
+        GetConverterInfo(attribute) is var (containingType, methodName) &&
+        GetConvertMethod(target, containingType, methodName, ctx) is { } convertMethod
+            ? new TagMapConverter(convertMethod)
+            : default;
 
     private static ITypeSymbol InferSourceType(TagMapConverter? conveter, ITypeSymbol targetType) =>
         conveter?.Method.Parameters[0].Type ?? targetType;

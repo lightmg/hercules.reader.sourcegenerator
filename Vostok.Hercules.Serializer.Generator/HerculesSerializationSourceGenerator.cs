@@ -26,6 +26,15 @@ public class HerculesSerializationSourceGenerator : IIncrementalGenerator
                 predicate: (node, _) => node is PropertyDeclarationSyntax or FieldDeclarationSyntax,
                 transform: GetPropertyOrFieldInfo
             )
+            .Collect()
+            .Combine(initCtx.SyntaxProvider
+                .ForAttributeWithMetadataName(
+                    ExposedApi.HerculesTimestampTagAttribute.FullName,
+                    predicate: (node, _) => node is PropertyDeclarationSyntax or FieldDeclarationSyntax,
+                    transform: GetPropertyOrFieldInfo
+                )
+                .Collect())
+            .SelectMany((x, _) => x.Left.Concat(x.Right))
             .Where(m => m.containingType.GetAttributes()
                 .Select(attr => attr.AttributeClass?.ToString())
                 .Contains(ExposedApi.GenerateHerculesReaderAttribute.FullName)

@@ -10,11 +10,11 @@ public class User : IEntity
 {
     [HerculesTag("id")] public Guid Id { get; set; }
 
-    [HerculesTag("created"),
-     HerculesConverter(typeof(StaticConverters), nameof(StaticConverters.ParseDateTimeOffsetFromUnixMicroseconds))]
+    [HerculesTag("created")]
+    [HerculesConverter(typeof(StaticConverters), nameof(StaticConverters.ParseDateTimeOffsetFromUnixMicroseconds))]
     public DateTimeOffset Created { get; set; }
 
-    [HerculesTag(SpecialTagKind.Timestamp)]
+    [HerculesTimestampTag]
     [HerculesConverter(typeof(InstanceConverters), nameof(InstanceConverters.ParseTimestamp))]
     public long TimestampTicks { get; set; }
 

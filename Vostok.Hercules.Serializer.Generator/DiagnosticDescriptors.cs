@@ -25,10 +25,10 @@ public static class DiagnosticDescriptors
         isEnabledByDefault: true
     );
 
-    public static DiagnosticDescriptor DuplicatedAnnotation => new DiagnosticDescriptor(
+    public static DiagnosticDescriptor ConflictinAnnotations => new DiagnosticDescriptor(
         id: "VHSG02",
-        title: "Unexpected duplicated annotations",
-        messageFormat: "Annotation '{0}' shouldn't be duplicated",
+        title: "Unable to handle conflicting annotations",
+        messageFormat: "Found conflicting annotations: '{0}'. {1}",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true

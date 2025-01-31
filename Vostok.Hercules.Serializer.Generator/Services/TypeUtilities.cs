@@ -2,12 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
 public static class TypeUtilities
 {
+    public static IEnumerable<AttributeData> GetAttributes(this ISymbol symbol, AttributeTypeBuilder attribute) =>
+        symbol.GetAttributes().Where(a => a.AttributeClass?.ToString() == attribute.FullName);
+
     public static ITypeSymbol UnwrapNullable(ITypeSymbol type) =>
         IsNullable(type, out var underlying) ? underlying : type;
 
