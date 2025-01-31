@@ -17,7 +17,6 @@ public class HerculesSerializationSourceGenerator : IIncrementalGenerator
     {
         initCtx.RegisterPostInitializationOutput(ctx =>
         {
-            // todo embeddedattribute
             ctx.AddTypeSources(ExposedApi.All);
         });
 

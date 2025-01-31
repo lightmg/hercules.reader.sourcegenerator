@@ -2,9 +2,10 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extensions;
-using Vostok.Hercules.Serializer.Generator.Core.Primitives;
+using TypeKind = Vostok.Hercules.Serializer.Generator.Core.Primitives.TypeKind;
 
 namespace Vostok.Hercules.Serializer.Generator;
 
@@ -21,12 +22,14 @@ internal static class ExposedApi
     public static readonly AttributeTypeBuilder GenerateHerculesReaderAttribute =
         new AttributeTypeBuilder(Namespace, nameof(GenerateHerculesReaderAttribute))
         {
+            Accessibility = Accessibility.Internal,
             Usage = AttributeTargets.Class
         };
 
     public static readonly AttributeTypeBuilder HerculesConverterAttribute =
         new AttributeTypeBuilder(Namespace, nameof(HerculesConverterAttribute))
             {
+                Accessibility = Accessibility.Internal,
                 Usage = AttributeTargets.Property | AttributeTargets.Field
             }
             .AddConstructor(ctor => ctor.Parameters.Add(new("converterType", typeof(Type))))
@@ -39,6 +42,7 @@ internal static class ExposedApi
     public static readonly AttributeTypeBuilder HerculesTagAttribute =
         new AttributeTypeBuilder(Namespace, nameof(HerculesTagAttribute))
         {
+            Accessibility = Accessibility.Internal,
             Usage = AttributeTargets.Property | AttributeTargets.Field
         }.AddConstructor(ctor => ctor.Parameters.Add(new("key", typeof(string))));
 
@@ -71,6 +75,13 @@ internal static class ExposedApi
                 "$\"Nullability missmatch: property or field '{propertyName}' is null after reading all the tags.\""
             ))
             .AddPropertiesCtorInit(p => p.Name is "PropertyName");
+
+    public static readonly TypeBuilder EmbeddedAttribute =
+        new AttributeTypeBuilder("Microsoft.CodeAnalysis", "EmbeddedAttribute")
+        {
+            Accessibility = Accessibility.Internal,
+            Usage = AttributeTargets.Class
+        };
 
     internal static readonly TypeBuilder[] All = typeof(ExposedApi)
         .GetMembers(BindingFlags.Public | BindingFlags.Static)

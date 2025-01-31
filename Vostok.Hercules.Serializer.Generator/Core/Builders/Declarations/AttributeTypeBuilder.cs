@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Vostok.Hercules.Serializer.Generator.Core.Helpers;
 
 namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
 
 public class AttributeTypeBuilder(string ns, string name) 
-    : TypeBuilder(ns, StringUtils.RemoveSuffix(name, "Attribute"), baseType: typeof(Attribute))
+    : TypeBuilder(ns, name, baseType: typeof(Attribute))
 {
     public AttributeTargets Usage { get; set; } = AttributeTargets.All;
 
@@ -14,7 +13,9 @@ public class AttributeTypeBuilder(string ns, string name)
 
     public bool Inherited { get; set; } = true;
 
-    public override IEnumerable<string> Attributes => base.Attributes.Prepend(GetAttributeUsageRawSrc());
+    public override IEnumerable<string> Attributes => base.Attributes
+        .Prepend(GetAttributeUsageRawSrc())
+        .Prepend(ExposedApi.EmbeddedAttribute.FullName);
 
     private string GetAttributeUsageRawSrc() =>
         string.Format(
