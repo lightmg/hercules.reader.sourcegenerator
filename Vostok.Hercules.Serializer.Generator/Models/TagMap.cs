@@ -6,7 +6,7 @@ public class TagMap
     public readonly TagMapTarget Target;
     public readonly TagMapConverter? Converter;
 
-    public TagMap(ITagMapSource source, TagMapTarget target, TagMapConverter converter)
+    public TagMap(ITagMapSource source, TagMapTarget target, TagMapConverter? converter)
     {
         Source = source;
         Target = target;

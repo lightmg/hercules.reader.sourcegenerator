@@ -77,7 +77,7 @@ internal static class MappingProvider
     }
 
     private static ITagMapSource? CreateSource(
-        TagMapConverter config,
+        TagMapConverter? config,
         TagMapTarget target,
         ImmutableArray<TypedConstant> ctorArgs,
         MappingGeneratorContext ctx
@@ -109,7 +109,7 @@ internal static class MappingProvider
             : new TagMapKeySource(tagKey, ReferencedType.From(sourceType));
     }
 
-    private static TagMapConverter CreateMapConfiguration(TagMapTarget target, MappingGeneratorContext ctx)
+    private static TagMapConverter? CreateMapConfiguration(TagMapTarget target, MappingGeneratorContext ctx)
     {
         var matchedAttributes = target.Symbol.GetAttributes()
             .Where(a => a.AttributeClass?.ToString() == ExposedApi.HerculesConverterAttribute.FullName)
@@ -135,8 +135,8 @@ internal static class MappingProvider
         return default;
     }
 
-    private static ITypeSymbol InferSourceType(TagMapConverter mapConfig, ITypeSymbol targetType) =>
-        mapConfig.Method != null ? mapConfig.Method.Parameters[0].Type : targetType;
+    private static ITypeSymbol InferSourceType(TagMapConverter? conveter, ITypeSymbol targetType) =>
+        conveter?.Method.Parameters[0].Type ?? targetType;
 
     private static (ITypeSymbol type, string name)? GetConverterInfo(AttributeData attribute) =>
         attribute.AttributeConstructor?.Parameters.Length switch
