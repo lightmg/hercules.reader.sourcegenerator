@@ -18,5 +18,5 @@ public class ConstructorBuilder : BaseMethodBuilder
 
     public IList<ParameterBuilder> Parameters { get; } = [];
 
-    public IList<(ParameterBuilder parameter, PropertyBuilder property)> Initalizers { get; } = [];
+    public IDictionary<string, string> BaseCtorArgs { get; } = new Dictionary<string, string>();
 }

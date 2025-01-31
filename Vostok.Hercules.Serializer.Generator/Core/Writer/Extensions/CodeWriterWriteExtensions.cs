@@ -56,6 +56,11 @@ public static class CodeWriterWriteExtensions
             .AppendAccessibility(ctorBuilder.Accessibility).Append(" ")
             .AppendType(ctorBuilder.DeclaringTypeName)
             .WriteParameters(ctorBuilder.Parameters)
+            .WriteJoin(ctorBuilder.BaseCtorArgs, ", ",
+                writeEntry: (arg, w) => w.Append(arg.Key).Append(": ").Append(arg.Value),
+                prepend: w => w.Append(" : base("),
+                append: w => w.AppendLine(")")
+            )
             .WhenNotNull(ctorBuilder.EmitBody, (emit, w) => w.WriteCodeBlock(emit));
 
     public static CodeWriter WriteProperty(this CodeWriter writer, PropertyBuilder property) =>
@@ -119,7 +124,7 @@ public static class CodeWriterWriteExtensions
             prepend: w => w.Append(": ")
         );
 
-    public static CodeWriter WriteConstraints(this CodeWriter writer, IEnumerable<GenericTypeBuilder> generics) => 
+    public static CodeWriter WriteConstraints(this CodeWriter writer, IEnumerable<GenericTypeBuilder> generics) =>
         writer.WriteJoin(generics, "\n",
             (generic, gw) => gw.AppendJoin(", ", generic.AllConstraints),
             prepend: w => w.Append(" where ")

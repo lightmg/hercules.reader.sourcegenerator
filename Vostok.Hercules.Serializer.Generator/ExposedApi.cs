@@ -11,7 +11,7 @@ namespace Vostok.Hercules.Serializer.Generator;
 [SuppressMessage("ReSharper", "UnusedMember.Global")] // used implicitly via 'All' property
 internal static class ExposedApi
 {
-    /* 
+    /*
      * Some future ideas:
      *   - specify converter type via generic attribute
      */
@@ -29,7 +29,7 @@ internal static class ExposedApi
             {
                 Usage = AttributeTargets.Property | AttributeTargets.Field
             }
-            .AddConstructor(ctor => ctor.Parameters.Add(new("converterType", typeof(Type)))) 
+            .AddConstructor(ctor => ctor.Parameters.Add(new("converterType", typeof(Type))))
             .AddConstructor(ctor =>
             {
                 ctor.Parameters.Add(new("convertMethodContainingType", typeof(Type)));
@@ -41,20 +41,36 @@ internal static class ExposedApi
         {
             Usage = AttributeTargets.Property | AttributeTargets.Field
         }.AddConstructor(ctor => ctor.Parameters.Add(new("key", typeof(string))));
-    
-    public static readonly TypeBuilder HerculesConverterType = new TypeBuilder(Namespace, "IHerculesConverter")
-    {
-        Kind = TypeKind.Interface,
-        Generics = { "TValue", "THerculesValue" },
-        Methods =
+
+    public static readonly TypeBuilder HerculesConverterType =
+        new TypeBuilder(Namespace, "IHerculesConverter")
         {
-            new("Deserialize")
+            Kind = TypeKind.Interface,
+            Generics = { "TValue", "THerculesValue" },
+            Methods =
             {
-                ReturnType = "TValue",
-                Parameters = { new("value", "THerculesValue") }
+                new("Deserialize")
+                {
+                    ReturnType = "TValue",
+                    Parameters = { new("value", "THerculesValue") }
+                }
             }
-        }
-    };
+        };
+
+    public static readonly TypeBuilder ValidationExceptionType =
+        new TypeBuilder(Namespace, "HerculesValidationException", baseType: typeof(Exception))
+            {
+                Kind = TypeKind.Class,
+                Properties =
+                {
+                    new("PropertyName", typeof(string)) { ReadOnly = true }
+                }
+            }
+            .AddConstructor(cb => cb.BaseCtorArgs.Add(
+                "message",
+                "$\"Nullability missmatch: property or field '{propertyName}' is null after reading all the tags.\""
+            ))
+            .AddPropertiesCtorInit(p => p.Name is "PropertyName");
 
     internal static readonly TypeBuilder[] All = typeof(ExposedApi)
         .GetMembers(BindingFlags.Public | BindingFlags.Static)

@@ -101,7 +101,12 @@ public static class HerculesConverterEmitter
         {
             Accessibility = Accessibility.Public,
             ReturnType = mapping.Type.ToString(),
-            EmitBody = writer => writer.AppendLine("return this.Current;") // TODO add validations for non-optional tags
+            EmitBody = writer => writer
+                .WriteJoin(mapping.Entries.Where(e => !e.Target.IsNullable), null, (tag, w) => w
+                    .AppendLine($"if (this.Current.{tag.Target.Name} == null)").WriteCodeBlock(bw => bw
+                        .AppendLine($"throw new HerculesValidationException(\"{tag.Target.Name}\")")
+                    ))
+                .AppendLine("return this.Current;")
         };
 
     private static MethodBuilder CreateSetTimestampMethod(EventMapping mapping) =>

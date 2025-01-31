@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.CodeAnalysis;
+using Vostok.Hercules.Serializer.Generator.Services;
 
 namespace Vostok.Hercules.Serializer.Generator.Models;
 
@@ -15,6 +16,8 @@ public readonly struct TagMapTarget
     }
 
     public string Name => Symbol.Name;
+
+    public bool IsNullable => TypeUtilities.IsNullable(Type, out _);
 
     public IFieldSymbol? AsField => Symbol as IFieldSymbol;
 
