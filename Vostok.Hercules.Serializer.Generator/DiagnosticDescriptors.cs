@@ -81,4 +81,13 @@ public static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true
     );
+
+    public static DiagnosticDescriptor InvalidTimestampTagType => new DiagnosticDescriptor(
+        id: "VHSG08",
+        title: "Converter has invalid input type for timestamp tag",
+        messageFormat: "Invalid input type for timestamp tag converter: expected {0}, but found {1}",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true
+    );
 }

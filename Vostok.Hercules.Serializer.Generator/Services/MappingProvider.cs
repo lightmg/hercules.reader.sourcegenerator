@@ -77,7 +77,7 @@ internal static class MappingProvider
     }
 
     private static ITagMapSource? CreateSource(
-        TagMapConverter? config,
+        TagMapConverter? converter,
         TagMapTarget target,
         ImmutableArray<TypedConstant> ctorArgs,
         MappingGeneratorContext ctx
@@ -90,20 +90,27 @@ internal static class MappingProvider
 
         if (TypeUtilities.IsEnum(ctorArg))
         {
-            if (TypeUtilities.TryParseEnum<SpecialTagKind>(ctorArg, out var tagKind))
-                return new TagMapSpecialSource(tagKind, typeof(DateTimeOffset));
+            if (!TypeUtilities.TryParseEnum<SpecialTagKind>(ctorArg, out var tagKind))
+            {
+                ctx.AddDiagnostic(DiagnosticDescriptors.BadAnnotationArgument, target.Symbol,
+                    ExposedApi.HerculesTagAttribute, 0,
+                    $"Value '{ctorArg.Value}' is invalid for enum {ExposedApi.SpecialTagEnum.FullName}"
+                );
+                return null;
+            }
 
-            ctx.AddDiagnostic(DiagnosticDescriptors.BadAnnotationArgument, target.Symbol,
-                ExposedApi.HerculesTagAttribute, 0, 
-                $"Value '{ctorArg.Value}' is invalid for enum {ExposedApi.SpecialTagEnum.FullName}"
-            );
-            return null;
+            if (converter.HasValue && converter.Value.InType != typeof(DateTimeOffset))
+                ctx.AddDiagnostic(DiagnosticDescriptors.InvalidTimestampTagType, target.Symbol,
+                    typeof(DateTimeOffset), converter.Value.InType
+                );
+
+            return new TagMapSpecialSource(tagKind, typeof(DateTimeOffset));
         }
 
         if (ctorArg.Value is not string tagKey)
             return null; // not reporting diag here because build is already broken at this point
 
-        var sourceType = InferSourceType(config, target.Type);
+        var sourceType = InferSourceType(converter, target.Type);
         return TypeUtilities.IsNullable(sourceType, out var underlyingType)
             ? new TagMapKeySource(tagKey, ReferencedType.From(underlyingType))
             : new TagMapKeySource(tagKey, ReferencedType.From(sourceType));
