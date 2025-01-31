@@ -33,11 +33,11 @@ public static class CodeWriterWriteExtensions
             .Append(method.Name)
             .WriteGenericArgs(method.Generics)
             .WriteParameters(method.Parameters)
+            .WriteConstraints(method.Generics)
             .WhenNotNull(method.EmitBody,
                 then: (emitBody, w) => w.WriteCodeBlock(emitBody),
                 @else: w => w.Append(";")
             );
-    /* TODO .AppendGenericConstratins(builder.Generics) */
 
     public static CodeWriter WriteParameters(this CodeWriter writer, IEnumerable<ParameterBuilder> parameters) =>
         writer.WriteJoinBlock(Parentheses, ",\n", parameters, static (current, cw) => cw
@@ -78,6 +78,7 @@ public static class CodeWriterWriteExtensions
                 .Append(typeBuilder.Name)
                 .WriteGenericArgs(typeBuilder.Generics).Append(" ")
                 .WriteBaseTypes(typeBuilder.Interfaces.PrependIfNotNull(typeBuilder.BaseType))
+                .WriteConstraints(typeBuilder.Generics)
                 .AppendLine()
                 .WriteCodeBlock(tw => tw
                     .WriteProperties(typeBuilder.Properties.Where(p => p.Kind == ParameterKind.Field))
@@ -116,6 +117,12 @@ public static class CodeWriterWriteExtensions
         writer.WriteJoin(baseTypes, ", ",
             (entry, w) => w.Append(entry.FullName),
             prepend: w => w.Append(": ")
+        );
+
+    public static CodeWriter WriteConstraints(this CodeWriter writer, IEnumerable<GenericTypeBuilder> generics) => 
+        writer.WriteJoin(generics, "\n",
+            (generic, gw) => gw.AppendJoin(", ", generic.AllConstraints),
+            prepend: w => w.Append(" where ")
         );
 
     private static CodeWriter WriteBlock(this CodeWriter writer, (string open, string close) separators,
@@ -183,28 +190,6 @@ public static class CodeWriterWriteExtensions
         }
 
         append?.Invoke(writer);
-
-        return writer;
-    }
-
-    public static CodeWriter WriteJoinDecorated<T>(this CodeWriter writer,
-        IEnumerable<T> enumerable,
-        string? separator,
-        Action<T, CodeWriter> writeEntry,
-        Action<CodeWriter>? prepend = null,
-        Action<CodeWriter>? append = null)
-    {
-        separator ??= string.Empty;
-        using var enumerator = enumerable.GetEnumerator();
-        if (!enumerator.MoveNext())
-            return writer;
-
-        writeEntry(enumerator.Current, writer);
-        while (enumerator.MoveNext())
-        {
-            writer.Append(separator);
-            writeEntry(enumerator.Current, writer);
-        }
 
         return writer;
     }

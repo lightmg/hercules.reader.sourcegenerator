@@ -20,6 +20,12 @@ public static class EnumerableExtensions
             list.Add(item);
     }
 
+    public static IEnumerable<T> PrependWhen<T>(this IEnumerable<T> source, bool condition, T value) =>
+        condition ? source.Prepend(value) : source;
+
+    public static IEnumerable<T> AppendWhen<T>(this IEnumerable<T> source, bool condition, T value) =>
+        condition ? source.Append(value) : source;
+
     public static IEnumerable<T> PrependIfNotNull<T>(this IEnumerable<T> source, T? value) where T : struct =>
         value is null ? source : source.Prepend(value.Value);
 

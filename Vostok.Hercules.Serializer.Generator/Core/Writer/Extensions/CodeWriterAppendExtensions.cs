@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
 using Vostok.Hercules.Serializer.Generator.Core.Helpers;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
@@ -8,6 +9,9 @@ namespace Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
 
 public static class CodeWriterAppendExtensions
 {
+    public static CodeWriter AppendJoin(this CodeWriter writer, string separator, IEnumerable<string> values) =>
+        writer.WriteJoin(values, separator, static (current, w) => w.Append(current));
+
     public static CodeWriter AppendIfNotNull(this CodeWriter writer, string? value) =>
         value is null ? writer : writer.Append(value);
 
