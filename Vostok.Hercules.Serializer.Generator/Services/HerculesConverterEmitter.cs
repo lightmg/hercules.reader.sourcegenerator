@@ -102,10 +102,10 @@ public static class HerculesConverterEmitter
             Accessibility = Accessibility.Public,
             ReturnType = mapping.Type.ToString(),
             EmitBody = writer => writer
-                .WriteJoin(mapping.Entries.Where(e => !e.Target.IsNullable), null, (tag, w) => w
-                    .AppendLine($"if (this.Current.{tag.Target.Name} == null)").WriteCodeBlock(bw => bw
-                        .WriteThrowHerculesValidationException(tag.Target.Name)
-                    ))
+                .WriteIfElseBlock(mapping.Entries.Where(e => !e.Target.IsNullable),
+                    writeCondition: (tag, w) => w.Append($"this.Current.{tag.Target.Name} == null"),
+                    writeBody: (tag, w) => w.WriteThrowHerculesValidationException(tag.Target.Name)
+                )
                 .AppendLine("return this.Current;")
         };
 
@@ -123,9 +123,9 @@ public static class HerculesConverterEmitter
 
     private static void WriteAddValueMethod(CodeWriter writer, IEnumerable<IGrouping<string, TagMap>> entriesByKey) =>
         writer
-            .WriteJoin(entriesByKey, "", (entries, ifWriter) => ifWriter
-                .AppendLine($"""if (key == "{entries.Key}")""") // todo else if
-                .WriteCodeBlock(w => w.WriteJoin(entries, "\n", (e, ew) => WriteResultPropertyAssignment(ew, e)))
+            .WriteIfElseBlock(entriesByKey,
+                writeCondition: (entries, w) => w.Append($"key == \"{entries.Key}\""),
+                writeBody: (entries, w) => w.WriteJoin(entries, "\n", (e, ew) => WriteResultPropertyAssignment(ew, e))
             )
             .AppendLine("return this;");
 
@@ -148,4 +148,16 @@ public static class HerculesConverterEmitter
 
     private static CodeWriter AppendPropertyAssignment(this CodeWriter writer, string propertyName, string value) =>
         writer.Append($"this.").Append(propertyName).Append(" = ").Append(value).AppendLine(";");
+
+    private static CodeWriter WriteIfElseBlock<T>(this CodeWriter writer, IEnumerable<T> items,
+        Action<T, CodeWriter> writeCondition,
+        Action<T, CodeWriter> writeBody) =>
+        writer.WriteJoin(items, "else ",
+            writeEntry: (item, w) =>
+            {
+                w.Append("if (");
+                writeCondition(item, w);
+                w.AppendLine(")");
+                w.WriteCodeBlock(bw => writeBody(item, bw));
+            });
 }
