@@ -19,4 +19,6 @@ public class MethodBuilder : BaseMethodBuilder
     public IList<ParameterBuilder> Parameters { get; set; } = [];
 
     public bool IsStatic { get; set; } = false;
+
+    public bool IsOverride { get; set; } = false;
 }

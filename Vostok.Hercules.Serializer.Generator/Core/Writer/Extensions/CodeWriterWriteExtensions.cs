@@ -29,6 +29,7 @@ public static class CodeWriterWriteExtensions
         writer
             .AppendAccessibility(method.Accessibility).Append(" ")
             .When(method.IsStatic, static w => w.Append("static "))
+            .When(method.IsOverride, static w => w.Append("override "))
             .AppendType(method.ReturnType ?? ReferencedType.Void).Append(" ")
             .Append(method.Name)
             .WriteGenericArgs(method.Generics)
