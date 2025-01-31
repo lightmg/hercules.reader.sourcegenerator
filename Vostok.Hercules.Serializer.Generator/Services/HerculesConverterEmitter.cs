@@ -39,9 +39,9 @@ public static class HerculesConverterEmitter
         };
 
         var requiredServices = eventMap.Entries
-            .Where(e => e.Config.ConverterMethod is { IsStatic: false })
+            .Where(e => e.Converter?.Method is { IsStatic: false })
             .Select(e => (
-                Type: e.Config.ConverterMethod!.ContainingType,
+                Type: e.Converter!.Value.Method.ContainingType,
                 FieldName: GetConverterFieldName(e),
                 CtorParameterName: TextCaseConverter.ToLowerCamelCase(e.Target.Name) + "Converter"
             ))
@@ -138,12 +138,12 @@ public static class HerculesConverterEmitter
             .AppendLine("return this;");
 
     private static string? GetConverterFieldName(TagMap tagMap) =>
-        tagMap.Config.ConverterMethod?.IsStatic is false ? $"__{tagMap.Target.Name}_Converter" : null;
+        tagMap.Converter?.Method.IsStatic is false ? $"__{tagMap.Target.Name}_Converter" : null;
 
     private static void WriteResultPropertyAssignment(CodeWriter writer, TagMap map)
     {
         writer.Append($"this.Current.{map.Target.Name} = ");
-        if (map.Config.ConverterMethod is { } convertMethod)
+        if (map.Converter?.Method is { } convertMethod)
             writer
                 .Append(GetConverterFieldName(map) ?? convertMethod.ContainingType.ToString())
                 .Append('.')

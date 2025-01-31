@@ -4,12 +4,12 @@ public class TagMap
 {
     public readonly ITagMapSource Source;
     public readonly TagMapTarget Target;
-    public readonly TagMapConfiguration Config;
+    public readonly TagMapConverter? Converter;
 
-    public TagMap(ITagMapSource source, TagMapTarget target, TagMapConfiguration config)
+    public TagMap(ITagMapSource source, TagMapTarget target, TagMapConverter converter)
     {
         Source = source;
         Target = target;
-        Config = config;
+        Converter = converter;
     }
 }
