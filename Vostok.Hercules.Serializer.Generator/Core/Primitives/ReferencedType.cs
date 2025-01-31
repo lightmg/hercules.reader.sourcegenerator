@@ -1,6 +1,8 @@
 using System;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Types.Abstract;
 
 namespace Vostok.Hercules.Serializer.Generator.Core.Primitives;
 
@@ -37,7 +39,7 @@ public readonly struct ReferencedType(string fullName) : IEquatable<ReferencedTy
     public static ReferencedType From(ITypeSymbol type) =>
         From(type.ToString());
 
-    public static ReferencedType From(TypeBuilder typeBuilder) =>
+    public static ReferencedType From(ITypeBuilder typeBuilder) =>
         From(typeBuilder.FullName);
 
     public static ReferencedType From(string ns, string name) =>

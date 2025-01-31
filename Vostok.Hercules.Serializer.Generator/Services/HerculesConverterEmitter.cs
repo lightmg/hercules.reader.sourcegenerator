@@ -4,6 +4,8 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extensions;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
 using Vostok.Hercules.Serializer.Generator.Core.Helpers;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Core.Writer;
@@ -22,17 +24,16 @@ public static class HerculesConverterEmitter
 
     private static string EventBuilderInterfaceType(string type) => $"{Namespace}.IHerculesEventBuilder<{type}>";
 
-    public static TypeBuilder CreateType(EventMapping eventMap)
+    public static ClassBuilder CreateType(EventMapping eventMap)
     {
         var targetTypeFullName = eventMap.Type.ToString();
-        var builder = new TypeBuilder(
+        var builder = new ClassBuilder(
             ns: eventMap.Type.ContainingNamespace.ToString(),
             name: eventMap.Type.Name + "Builder",
             baseType: DummyBuilderType
         )
         {
             Accessibility = Accessibility.Public,
-            Kind = TypeKind.Class,
             Interfaces = { EventBuilderInterfaceType(targetTypeFullName) },
             Properties = { PropertyBuilder.ReadOnlyField("Current", targetTypeFullName, Accessibility.Public) }
         };

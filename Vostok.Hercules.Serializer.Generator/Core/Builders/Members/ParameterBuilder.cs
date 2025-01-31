@@ -1,6 +1,6 @@
 ﻿using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 
-namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
+namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
 
 public class ParameterBuilder
 {

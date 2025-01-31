@@ -1,9 +1,10 @@
 using Microsoft.CodeAnalysis;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Members.Abstract;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 
-namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
+namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
 
-public class PropertyBuilder
+public class PropertyBuilder : ITypeMemberBuilder
 {
     public PropertyBuilder(string name, ReferencedType type)
     {

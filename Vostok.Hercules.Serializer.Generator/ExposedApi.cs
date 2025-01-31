@@ -5,7 +5,8 @@ using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extensions;
-using TypeKind = Vostok.Hercules.Serializer.Generator.Core.Primitives.TypeKind;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Types.Abstract;
 
 namespace Vostok.Hercules.Serializer.Generator;
 
@@ -46,10 +47,9 @@ internal static class ExposedApi
             Usage = AttributeTargets.Property | AttributeTargets.Field
         }.AddConstructor(ctor => ctor.Parameters.Add(new("key", typeof(string))));
 
-    public static readonly TypeBuilder HerculesConverterType =
-        new TypeBuilder(Namespace, "IHerculesConverter")
+    public static readonly InterfaceBuilder HerculesConverterType =
+        new InterfaceBuilder(Namespace, "IHerculesConverter")
         {
-            Kind = TypeKind.Interface,
             Generics = { "TValue", "THerculesValue" },
             Methods =
             {
@@ -61,10 +61,9 @@ internal static class ExposedApi
             }
         };
 
-    public static readonly TypeBuilder ValidationExceptionType =
-        new TypeBuilder(Namespace, "HerculesValidationException", baseType: typeof(Exception))
+    public static readonly ClassBuilder ValidationExceptionType =
+        new ClassBuilder(Namespace, "HerculesValidationException", baseType: typeof(Exception))
             {
-                Kind = TypeKind.Class,
                 Properties =
                 {
                     new("PropertyName", typeof(string)) { ReadOnly = true }
@@ -76,14 +75,14 @@ internal static class ExposedApi
             ))
             .AddPropertiesCtorInit(p => p.Name is "PropertyName");
 
-    public static readonly TypeBuilder EmbeddedAttribute =
+    public static readonly ClassBuilder EmbeddedAttribute =
         new AttributeTypeBuilder("Microsoft.CodeAnalysis", "EmbeddedAttribute")
         {
             Accessibility = Accessibility.Internal,
             Usage = AttributeTargets.Class
         };
 
-    internal static readonly TypeBuilder[] All = typeof(ExposedApi)
+    internal static readonly ITypeBuilder[] All = typeof(ExposedApi)
         .GetMembers(BindingFlags.Public | BindingFlags.Static)
         .Select(m => m switch
         {
@@ -91,6 +90,6 @@ internal static class ExposedApi
             FieldInfo f => f.GetValue(null),
             _ => null
         })
-        .OfType<TypeBuilder>()
+        .OfType<ITypeBuilder>()
         .ToArray();
 }

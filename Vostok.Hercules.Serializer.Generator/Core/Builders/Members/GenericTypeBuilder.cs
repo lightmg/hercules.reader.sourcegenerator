@@ -3,7 +3,7 @@ using System.Linq;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Extensions;
 
-namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
+namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
 
 public class GenericTypeBuilder(string name)
 {

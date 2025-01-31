@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Linq;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Members.Abstract;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Types.Abstract;
 using Vostok.Hercules.Serializer.Generator.Core.Helpers;
 using Vostok.Hercules.Serializer.Generator.Core.Writer;
 
@@ -8,7 +11,7 @@ namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extens
 public static class TypeBuilderExtensions
 {
     public static TBuilder AppendEmitBody<TBuilder>(this TBuilder builder, Action<CodeWriter> emitBody)
-        where TBuilder : BaseMethodBuilder
+        where TBuilder : IMethodBodyBuilder
     {
         builder.EmitBody = builder.EmitBody is null
             ? emitBody
@@ -18,7 +21,7 @@ public static class TypeBuilderExtensions
     }
 
     public static TBuilder PrependEmitBody<TBuilder>(this TBuilder builder, Action<CodeWriter> emitBody)
-        where TBuilder : BaseMethodBuilder
+        where TBuilder : IMethodBodyBuilder
     {
         builder.EmitBody = builder.EmitBody is null
             ? emitBody
@@ -30,7 +33,7 @@ public static class TypeBuilderExtensions
     public static TBuilder AddPropertiesCtorInit<TBuilder>(this TBuilder typeBuilder,
         Func<PropertyBuilder, bool> propertySelector,
         Func<ConstructorBuilder, bool>? ctorSelector = null
-    ) where TBuilder : TypeBuilder
+    ) where TBuilder : StatefulTypeBuilder, IInitializabeTypeBuilder
     {
         var constructors = ctorSelector is null
             ? typeBuilder.Constructors
@@ -50,17 +53,11 @@ public static class TypeBuilderExtensions
 
     public static TBuilder AddConstructor<TBuilder>(this TBuilder typeBuilder,
         Action<ConstructorBuilder>? transform = null
-    ) where TBuilder : TypeBuilder
+    ) where TBuilder : StatefulTypeBuilder, IInitializabeTypeBuilder
     {
         var ctor = new ConstructorBuilder(typeBuilder.Name);
         transform?.Invoke(ctor);
         typeBuilder.Constructors.Add(ctor);
         return typeBuilder;
-    }
-
-    public static TBuilder With<TBuilder>(this TBuilder builder, Action<TBuilder> modifier) where TBuilder : TypeBuilder
-    {
-        modifier(builder);
-        return builder;
     }
 }

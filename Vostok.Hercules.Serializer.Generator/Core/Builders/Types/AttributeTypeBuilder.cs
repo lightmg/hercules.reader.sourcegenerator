@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
+namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
 
 public class AttributeTypeBuilder(string ns, string name) 
-    : TypeBuilder(ns, name, baseType: typeof(Attribute))
+    : ClassBuilder(ns, name, baseType: typeof(Attribute))
 {
     public AttributeTargets Usage { get; set; } = AttributeTargets.All;
 

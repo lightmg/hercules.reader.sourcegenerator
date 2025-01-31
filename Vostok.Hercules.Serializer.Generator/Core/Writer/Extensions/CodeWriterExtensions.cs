@@ -4,6 +4,13 @@ namespace Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
 
 public static class CodeWriterExtensions
 {
+    public static CodeWriter WhenOfType<T>(this CodeWriter writer, object? arg, Action<T, CodeWriter> transform)
+    {
+        if (arg is T value)
+            transform(value, writer);
+
+        return writer;
+    }
     public static CodeWriter WhenNotNull<T>(this CodeWriter writer, T? arg, Action<T, CodeWriter> transform)
     {
         if (arg is not null)

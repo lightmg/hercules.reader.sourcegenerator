@@ -7,6 +7,9 @@ using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extensions;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Types.Abstract;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Core.Writer;
 using Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
@@ -29,10 +32,9 @@ public class CodeWriterTests
     public void Test()
     {
         var writer = new CodeWriter()
-            .WriteType(new TypeBuilder("TestNameSpace.Gen", "TestType")
+            .WriteType(new ClassBuilder("TestNameSpace.Gen", "TestType")
                 {
                     Accessibility = Accessibility.Public,
-                    Kind = TypeKind.Class,
                     Properties =
                     {
                         new PropertyBuilder("Prop1", typeof(string)) { Kind = ParameterKind.Property },

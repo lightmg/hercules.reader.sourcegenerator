@@ -6,3 +6,10 @@ public enum TypeKind
     Interface,
     Struct
 }
+
+public enum ClassKind
+{
+    Class,
+    Struct,
+    ReadOnlyStruct
+}

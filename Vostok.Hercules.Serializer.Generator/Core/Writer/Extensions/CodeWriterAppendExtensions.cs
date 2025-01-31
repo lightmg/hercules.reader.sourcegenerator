@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
 using Vostok.Hercules.Serializer.Generator.Core.Helpers;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 using TypeKind = Vostok.Hercules.Serializer.Generator.Core.Primitives.TypeKind;
