@@ -31,5 +31,7 @@ public class User : IEntity
 
     [HerculesTag("invitedBy")] public User? InvitedBy { get; set; }
 
-    [HerculesTag("emails")] public ICollection<string> Emails { get; set; } = new List<string>();
+    [HerculesTag("emails")]
+    [HerculesConverter(typeof(InstanceConverters), nameof(InstanceConverters.LongToString))]
+    public ICollection<string> Emails { get; set; } = new List<string>();
 }

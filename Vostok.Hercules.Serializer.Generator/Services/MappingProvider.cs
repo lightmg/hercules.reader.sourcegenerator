@@ -55,9 +55,31 @@ internal static class MappingProvider
             return CreateTimestampMap(target, converter, ctx);
 
         if (AttributeFinder.TryGetAttributeArgs(symbol, ExposedApi.HerculesTagAttribute, ctx, out var args))
-            return args.Length == 1 && args[0] is string tagKey ? CreateFlatMap(target, tagKey, converter) : null;
+        {
+            if (args.Length != 1 || args[0] is not string tagKey)
+                return null;
+
+            return TypeUtilities.IsVector(target.Type, out var elementType)
+                ? CreateVectorMap(target, tagKey, converter, elementType)
+                : CreateFlatMap(target, tagKey, converter);
+        }
 
         return null;
+    }
+
+    private static TagMap CreateVectorMap(
+        TagMapTarget target,
+        string tagKey,
+        TagMapConverter? converter,
+        ITypeSymbol elementType
+    )
+    {
+        var sourceType = InferSourceType(converter, elementType);
+        var source = TypeUtilities.IsNullable(sourceType, out var underlyingType)
+            ? new TagMapVectorSource(tagKey, ReferencedType.From(target.Type), ReferencedType.From(underlyingType))
+            : new TagMapVectorSource(tagKey, ReferencedType.From(target.Type), ReferencedType.From(sourceType));
+
+        return new TagMap(source, target, converter);
     }
 
     private static TagMap CreateFlatMap(TagMapTarget target, string tagKey, TagMapConverter? converter)
@@ -87,7 +109,7 @@ internal static class MappingProvider
         GetConverterInfo(attribute) is var (containingType, methodName) &&
         GetConvertMethod(target, containingType, methodName, ctx) is { } convertMethod
             ? new TagMapConverter(convertMethod)
-            : default;
+            : null;
 
     private static ITypeSymbol InferSourceType(TagMapConverter? conveter, ITypeSymbol targetType) =>
         conveter?.Method.Parameters[0].Type ?? targetType;

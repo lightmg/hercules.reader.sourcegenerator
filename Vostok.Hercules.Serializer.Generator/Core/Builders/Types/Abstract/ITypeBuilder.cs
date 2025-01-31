@@ -14,4 +14,6 @@ public interface ITypeBuilder
     Accessibility Accessibility { get; set; }
 
     IEnumerable<string> Attributes { get; }
+
+    IList<string> Usings { get; }
 }

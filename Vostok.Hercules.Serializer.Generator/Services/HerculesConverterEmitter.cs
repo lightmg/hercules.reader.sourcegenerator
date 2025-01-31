@@ -22,7 +22,11 @@ public static class HerculesConverterEmitter
     private const string DummyBuilderType = $"{Namespace}.DummyHerculesTagsBuilder";
     private const string TagsBuilderInterfaceType = $"{Namespace}.IHerculesTagsBuilder";
 
-    public static string EventBuilderInterfaceType(string type) => $"{Namespace}.IHerculesEventBuilder<{type}>";
+    public static string EventBuilderInterfaceType(string type) =>
+        $"{Namespace}.IHerculesEventBuilder<{type}>";
+
+    public static string IReadOnlyListType(string type) =>
+        typeof(IReadOnlyList<>).Namespace + $".IReadOnlyList<{type}>";
 
     public static ClassBuilder CreateType(EventMapping eventMap)
     {
@@ -38,13 +42,21 @@ public static class HerculesConverterEmitter
             Properties = { PropertyBuilder.ReadOnlyField("Current", targetTypeFullName, Accessibility.Public) }
         };
 
+        if (eventMap.EntriesWithSource<TagMapVectorSource>().Any())
+            builder.Usings.AddRange([
+                "System.Collections.Generic",
+                "System.Linq"
+            ]);
+
         var requiredServices = eventMap.Entries
-            .Where(e => e.Converter?.Method is { IsStatic: false })
-            .Select(e => (
-                Type: e.Converter!.Value.Method.ContainingType,
-                FieldName: GetConverterFieldName(e),
-                CtorParameterName: TextCaseConverter.ToLowerCamelCase(e.Target.Name) + "Converter"
+            .Select(e => e.Converter)
+            .Where(c => c?.Method is { IsStatic: false })
+            .Select(c => (
+                Type: c!.Value.Method.ContainingType,
+                FieldName: GetConverterFieldName(c.Value),
+                CtorParameterName: TextCaseConverter.ToLowerCamelCase(c.Value.Method.ContainingType.Name)
             ))
+            .DistinctBy(x => x.FieldName)
             .Where(e => e.FieldName != null)
             .ToList();
 
@@ -71,19 +83,19 @@ public static class HerculesConverterEmitter
             );
         });
 
-        builder.Methods.AddRange(CreateAddValueMethods(eventMap));
+        builder.Methods.AddRange(CreateFlatMapMethods(eventMap));
+        builder.Methods.AddRange(CreateVectorMapMethods(eventMap));
         builder.Methods.Add(CreateBuildEventMethod(eventMap));
         builder.Methods.Add(CreateSetTimestampMethod(eventMap));
 
         return builder;
     }
 
-    private static IEnumerable<MethodBuilder> CreateAddValueMethods(EventMapping eventMap) =>
-        eventMap.Entries
-            .Where(e => e.Source is TagMapFlatSource)
+    private static IEnumerable<MethodBuilder> CreateFlatMapMethods(EventMapping eventMap) =>
+        eventMap.EntriesWithSource<TagMapFlatSource>()
             .GroupBy(x => x.Source.Type, (sourceType, entries) => (
                 KeyType: sourceType,
-                SameKeyEntries: entries.GroupBy(y => ((TagMapFlatSource)y.Source).Key)
+                SameKeyEntries: entries.GroupBy(y => y.Source.Key)
             ))
             .Select(group => new MethodBuilder("AddValue")
                 {
@@ -95,7 +107,27 @@ public static class HerculesConverterEmitter
                     },
                     ReturnType = TagsBuilderInterfaceType,
                 }
-                .PrependEmitBody(w => WriteAddValueMethod(w, group.SameKeyEntries))
+                .PrependEmitBody(w => WriteFlatMapMethod(w, group.SameKeyEntries))
+            );
+
+
+    private static IEnumerable<MethodBuilder> CreateVectorMapMethods(EventMapping eventMap) =>
+        eventMap.EntriesWithSource<TagMapVectorSource>()
+            .GroupBy(x => x.Source.ElementType, (elementType, entries) => (
+                ElementType: elementType,
+                SameKeyEntries: entries.GroupBy(y => y.Source.Key)
+            ))
+            .Select(group => new MethodBuilder("AddValue")
+                {
+                    Accessibility = Accessibility.Public,
+                    Parameters =
+                    {
+                        new("key", ReferencedType.From<string>()),
+                        new("values", IReadOnlyListType(group.ElementType.FullName))
+                    },
+                    ReturnType = TagsBuilderInterfaceType,
+                }
+                .PrependEmitBody(w => WriteVectorMapMethod(w, group.SameKeyEntries))
             );
 
     private static MethodBuilder CreateBuildEventMethod(EventMapping mapping) =>
@@ -119,9 +151,9 @@ public static class HerculesConverterEmitter
             Parameters = { new ParameterBuilder("value", ReferencedType.From<DateTimeOffset>()) },
             EmitBody = writer => writer
                 .WriteJoin(
-                    mapping.Entries.Where(e => e.Source is TagMapTimestampSource),
+                    mapping.EntriesWithSource<TagMapTimestampSource>(),
                     "\n",
-                    (map, w) => WriteResultPropertyAssignment(w, map)
+                    (map, w) => WriteFlatAssignment(w, map)
                 )
                 .AppendLine("return this;")
         };
@@ -129,30 +161,54 @@ public static class HerculesConverterEmitter
     private static CodeWriter WriteThrowHerculesValidationException(this CodeWriter writer, string propertyName) =>
         writer.AppendLine($"throw new {ExposedApi.ValidationExceptionType.FullName}(\"{propertyName}\");");
 
-    private static void WriteAddValueMethod(CodeWriter writer, IEnumerable<IGrouping<string, TagMap>> entriesByKey) =>
+    private static void WriteVectorMapMethod(CodeWriter writer,
+        IEnumerable<IGrouping<string, TagMap<TagMapVectorSource>>> entriesByKey) =>
         writer
             .WriteIfElseBlock(entriesByKey,
                 writeCondition: (entries, w) => w.Append($"key == \"{entries.Key}\""),
-                writeBody: (entries, w) => w.WriteJoin(entries, "\n", (e, ew) => WriteResultPropertyAssignment(ew, e))
+                writeBody: (entries, w) => w.WriteJoin(entries, "\n", (e, ew) => WriteVectorAssignment(ew, e))
             )
             .AppendLine("return this;");
 
-    private static string? GetConverterFieldName(TagMap tagMap) =>
-        tagMap.Converter?.Method.IsStatic is false ? $"__{tagMap.Target.Name}_Converter" : null;
+    private static void WriteFlatMapMethod(CodeWriter writer,
+        IEnumerable<IGrouping<string, TagMap<TagMapFlatSource>>> entriesByKey) =>
+        writer
+            .WriteIfElseBlock(entriesByKey,
+                writeCondition: (entries, w) => w.Append($"key == \"{entries.Key}\""),
+                writeBody: (entries, w) => w.WriteJoin(entries, "\n", (e, ew) => WriteFlatAssignment(ew, e))
+            )
+            .AppendLine("return this;");
 
-    private static void WriteResultPropertyAssignment(CodeWriter writer, TagMap map)
-    {
-        writer.Append($"this.Current.{map.Target.Name} = ");
-        if (map.Converter?.Method is { } convertMethod)
-            writer
-                .Append(GetConverterFieldName(map) ?? convertMethod.ContainingType.ToString())
-                .Append('.')
-                .Append(convertMethod.Name)
-                .Append("(value)");
-        else writer.Append("value");
+    private static string? GetConverterFieldName(TagMapConverter? converter) =>
+        converter?.Method.IsStatic is false ? $"__{converter.Value.Method.ContainingType.Name}" : null;
 
-        writer.AppendLine(';');
-    }
+    private static void WriteFlatAssignment(CodeWriter writer, TagMap map) =>
+        writer
+            .Append($"this.Current.{map.Target.Name} = ")
+            .WriteValueWithConversion(map.Converter)
+            .AppendLine(';');
+
+    private static void WriteVectorAssignment(CodeWriter writer, TagMap map) =>
+        writer
+            .Append($"this.Current.{map.Target.Name} = values")
+            .WhenNotNull(map.Converter, (c, w) => w
+                .Append(".Select(value => ")
+                .WriteConverterInvoction(c)
+                .Append(").ToList()"))
+            .AppendLine(';');
+
+    private static CodeWriter WriteValueWithConversion(this CodeWriter writer, TagMapConverter? converter) =>
+        writer.WhenNotNull(converter,
+            then: (c, w) => w.WriteConverterInvoction(c),
+            @else: w => w.Append("value")
+        );
+
+    private static CodeWriter WriteConverterInvoction(this CodeWriter writer, TagMapConverter converter) =>
+        writer
+            .Append(GetConverterFieldName(converter) ?? converter.Method.ContainingType.ToString())
+            .Append('.')
+            .Append(converter.Method.Name)
+            .Append("(value)");
 
     private static CodeWriter AppendPropertyAssignment(this CodeWriter writer, string propertyName, string value) =>
         writer.Append($"this.").Append(propertyName).Append(" = ").Append(value).AppendLine(";");

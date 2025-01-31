@@ -13,6 +13,7 @@ public class HerculesSerializationSourceGeneratorTests
     private const string ClassText =
         $$"""
         using Vostok.Hercules.Serializer.Generator;
+        using System.Collections.Generic;
         
         namespace TestNamespace;
 
@@ -23,6 +24,12 @@ public class HerculesSerializationSourceGeneratorTests
         [GenerateHerculesReader]
         public class Model 
         {
+            [HerculesTag("sv")]
+            public IReadOnlyList<string> StringVector { get; set; }
+
+            [HerculesTag("sv2")]
+            public string[] AnotherStringVector { get; set; }
+
             [HerculesTag(SpecialTagKind.Timestamp)]
             public DateTimeOffset Timestamp {get;set;}
             

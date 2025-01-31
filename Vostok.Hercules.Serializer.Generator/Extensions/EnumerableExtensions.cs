@@ -1,10 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Vostok.Hercules.Serializer.Generator.Extensions;
 
 public static class EnumerableExtensions
 {
+    public static IEnumerable<T> DistinctBy<T, TKey>(this IEnumerable<T> source, Func<T, TKey> keySelector,
+        IEqualityComparer<TKey>? comparer = null)
+    {
+        var keys = new HashSet<TKey>(comparer);
+        foreach (var element in source)
+            if (keys.Add(keySelector(element)))
+                yield return element;
+    }
+
     public static int GetElementsHashCode<T>(this IEnumerable<T> source)
     {
         // Ctrl+C & Ctrl+V from https://stackoverflow.com/a/8094931

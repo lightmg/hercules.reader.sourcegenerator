@@ -9,7 +9,7 @@ public static class Program
 {
     public static void Main(string[] args)
     {
-        var builder = new UserBuilder(new(), new());
+        var builder = new UserBuilder(new());
     }
 
     public class EventBuilder : DummyHerculesTagsBuilder, IHerculesEventBuilder<User>
@@ -21,6 +21,16 @@ public static class Program
         public IHerculesTagsBuilder AddVector(string key, IReadOnlyList<short> values)
         {
             throw new NotImplementedException();
+        }
+
+        public IHerculesEventBuilder AddContainer(string key, Action<IHerculesTagsBuilder> valueBuilder)
+        {
+            if (key == "category")
+            {
+                var catbuilder = new CategoryBuilder(new());
+                valueBuilder(catbuilder);
+                _ = catbuilder.BuildEvent();
+            }
         }
     }
 }

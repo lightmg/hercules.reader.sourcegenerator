@@ -22,4 +22,6 @@ public abstract class TypeBuilder : ITypeBuilder
     public virtual IEnumerable<string> Attributes => [];
 
     public override string ToString() => FullName;
+
+    public IList<string> Usings { get; } = [];
 }

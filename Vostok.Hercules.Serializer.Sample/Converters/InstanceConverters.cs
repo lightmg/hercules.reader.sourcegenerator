@@ -7,6 +7,9 @@ public class InstanceConverters
     public int ParseSomething(long someValue) => 
         (int)someValue;
 
+    public string LongToString(long someValue) => 
+        someValue.ToString();
+
     public long ParseTimestamp(DateTimeOffset timestamp) => 
         timestamp.Ticks;
 }

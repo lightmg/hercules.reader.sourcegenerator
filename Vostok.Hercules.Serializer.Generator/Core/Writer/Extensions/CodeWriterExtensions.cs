@@ -11,23 +11,29 @@ public static class CodeWriterExtensions
 
         return writer;
     }
-    public static CodeWriter WhenNotNull<T>(this CodeWriter writer, T? arg, Action<T, CodeWriter> transform)
+
+    public static CodeWriter WhenNotNull<T>(this CodeWriter writer, T? arg,
+        Action<T, CodeWriter> @then,
+        Action<CodeWriter>? @else = null
+    ) where T : class
     {
         if (arg is not null)
-            transform(arg, writer);
+            then(arg, writer);
+        else
+            @else?.Invoke(writer);
 
         return writer;
     }
 
     public static CodeWriter WhenNotNull<T>(this CodeWriter writer, T? arg,
         Action<T, CodeWriter> @then,
-        Action<CodeWriter> @else
-    )
+        Action<CodeWriter>? @else = null
+    ) where T : struct
     {
-        if (arg is not null)
-            then(arg, writer);
+        if (arg.HasValue)
+            then(arg.Value, writer);
         else
-            @else(writer);
+            @else?.Invoke(writer);
 
         return writer;
     }

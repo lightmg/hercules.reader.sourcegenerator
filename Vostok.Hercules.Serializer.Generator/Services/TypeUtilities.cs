@@ -15,6 +15,35 @@ public static class TypeUtilities
     public static ITypeSymbol UnwrapNullable(ITypeSymbol type) =>
         IsNullable(type, out var underlying) ? underlying : type;
 
+    public static bool IsVector(ITypeSymbol type, out ITypeSymbol elementType)
+    {
+        if (type.SpecialType is SpecialType.System_String)
+        {
+            elementType = type;
+            return false;
+        }
+
+        if (type is IArrayTypeSymbol array)
+        {
+            elementType = array.ElementType;
+            return true;
+        }
+
+        if (type.OriginalDefinition.SpecialType is (
+            SpecialType.System_Collections_Generic_IEnumerable_T or
+            SpecialType.System_Collections_Generic_ICollection_T or
+            SpecialType.System_Collections_Generic_IReadOnlyCollection_T or
+            SpecialType.System_Collections_Generic_IList_T or
+            SpecialType.System_Collections_Generic_IReadOnlyList_T))
+        {
+            elementType = type is INamedTypeSymbol {Arity: 1} named ? named.TypeArguments[0] : type;
+            return true;
+        }
+
+        elementType = type;
+        return false;
+    }
+
     public static bool TryParseEnum<T>(TypedConstant constant, out T enumValue) where T : struct, Enum
     {
         if (!IsEnum(constant))
@@ -38,7 +67,7 @@ public static class TypeUtilities
 
         foreach (var current in GetEnumKeysWithValues<T>())
         {
-            if (sourceEnumValues.TryGetValue(current.Key, out var value) && current.Value.Equals(value)) 
+            if (sourceEnumValues.TryGetValue(current.Key, out var value) && current.Value.Equals(value))
                 continue;
             enumValue = default;
             return false;
@@ -123,7 +152,7 @@ public static class TypeUtilities
         var enumType = typeof(TEnum);
         foreach (var value in Enum.GetValues(enumType))
             yield return new KeyValuePair<string, object>(
-                Enum.GetName(enumType, value), 
+                Enum.GetName(enumType, value),
                 Convert.ChangeType(value, Enum.GetUnderlyingType(enumType))
             );
     }
