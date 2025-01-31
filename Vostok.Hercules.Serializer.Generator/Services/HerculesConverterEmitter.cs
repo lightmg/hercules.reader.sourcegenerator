@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extensions;
+using Vostok.Hercules.Serializer.Generator.Core.Helpers;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Core.Writer;
 using Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
@@ -34,10 +35,41 @@ public static class HerculesConverterEmitter
             Kind = TypeKind.Class,
             Interfaces = { EventBuilderInterfaceType(targetTypeFullName) },
             Properties = { PropertyBuilder.ReadOnlyField("Current", targetTypeFullName, Accessibility.Public) }
-        }
-        .WithConstructor();
+        };
 
-        builder.AddPropertiesCtorInit(p => p.Name == "Current");
+        var requiredServices = eventMap.Entries
+            .Where(e => e.Config.ConverterMethod is { IsStatic: false })
+            .Select(e => (
+                Type: e.Config.ConverterMethod!.ContainingType,
+                FieldName: GetConverterFieldName(e),
+                CtorParameterName: TextCaseConverter.ToLowerCamelCase(e.Target.Name) + "Converter"
+            ))
+            .Where(e => e.FieldName != null)
+            .ToList();
+
+        builder.Properties.AddRange(requiredServices
+            .Select(x => new PropertyBuilder(x.FieldName!, ReferencedType.From(x.Type))
+            {
+                Accessibility = Accessibility.Private,
+                Kind = ParameterKind.Field,
+                ReadOnly = true
+            })
+        );
+
+        builder.AddConstructor(ctor =>
+        {
+            ctor.Parameters.AddRange(requiredServices
+                .Select(x => new ParameterBuilder(x.CtorParameterName!, ReferencedType.From(x.Type)))
+            );
+
+            ctor.AppendEmitBody(w => w
+                .AppendPropertyAssignment("Current", $"new {targetTypeFullName}()")
+                .WriteJoin(requiredServices, null, static (serviceInfo, cw) => cw
+                    .AppendPropertyAssignment(serviceInfo.FieldName!, serviceInfo.CtorParameterName)
+                )
+            );
+        });
+
         builder.Methods.AddRange(CreateAddValueMethods(eventMap));
         builder.Methods.Add(CreateBuildEventMethod(eventMap));
         builder.Methods.Add(CreateSetTimestampMethod(eventMap));
@@ -85,16 +117,19 @@ public static class HerculesConverterEmitter
         writer
             .WriteJoin(entriesByKey, "", (entries, ifWriter) => ifWriter
                 .AppendLine($"""if (key == "{entries.Key}")""") // todo else if
-                .WriteCodeBlock(w => w.WriteJoin(entries, "\n", (e, ew) => WritePropertyAssignment(ew, e)))
+                .WriteCodeBlock(w => w.WriteJoin(entries, "\n", (e, ew) => WriteResultPropertyAssignment(ew, e)))
             )
             .AppendLine("return this;");
 
-    private static void WritePropertyAssignment(CodeWriter writer, TagMap map)
+    private static string? GetConverterFieldName(TagMap tagMap) =>
+        tagMap.Config.ConverterMethod?.IsStatic is false ? $"__{tagMap.Target.Name}_Converter" : null;
+
+    private static void WriteResultPropertyAssignment(CodeWriter writer, TagMap map)
     {
         writer.Append($"this.Current.{map.Target.Name} = ");
         if (map.Config.ConverterMethod is { } convertMethod)
             writer
-                .Append(convertMethod.ContainingType.ToString())
+                .Append(GetConverterFieldName(map) ?? convertMethod.ContainingType.ToString())
                 .Append('.')
                 .Append(convertMethod.Name)
                 .Append("(value)");
@@ -102,4 +137,7 @@ public static class HerculesConverterEmitter
 
         writer.AppendLine(';');
     }
+
+    private static CodeWriter AppendPropertyAssignment(this CodeWriter writer, string propertyName, string value) =>
+        writer.Append($"this.").Append(propertyName).Append(" = ").Append(value).AppendLine(";");
 }

@@ -48,7 +48,7 @@ public static class TypeBuilderExtensions
         return typeBuilder;
     }
 
-    public static TBuilder WithConstructor<TBuilder>(this TBuilder typeBuilder,
+    public static TBuilder AddConstructor<TBuilder>(this TBuilder typeBuilder,
         Action<ConstructorBuilder>? transform = null
     ) where TBuilder : TypeBuilder
     {

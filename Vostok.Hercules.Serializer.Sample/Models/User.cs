@@ -20,7 +20,7 @@ public class User : IEntity
     [HerculesTag("phone")]
     public string Phone { get; set; } = null!;
 
-    [HerculesTag("age")]
+    [HerculesTag("age"), HerculesConverter(typeof(InstanceConverters), nameof(InstanceConverters.ParseSomething))]
     public int Age { get; set; }
 
     [HerculesTag("city")]

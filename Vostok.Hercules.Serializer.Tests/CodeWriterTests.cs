@@ -39,7 +39,7 @@ public class CodeWriterTests
                         new PropertyBuilder("Field1", typeof(int)) { Kind = ParameterKind.Field, ReadOnly = true }
                     }
                 }
-                .WithConstructor()
+                .AddConstructor()
                 .AddPropertiesCtorInit(x => x.Name == "Field1")
             );
 

@@ -6,6 +6,14 @@ public static class DiagnosticDescriptors
 {
     private const string Category = "Vostok.Hercules.Serializer.SourceGenerator";
 
+    public static DiagnosticDescriptor UnexpectedError => new DiagnosticDescriptor(
+        id: "VHSG00",
+        title: "Unexpected error",
+        messageFormat: "Unexpected error occured during mapping generation: {0}",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true
+    );
     public static DiagnosticDescriptor UnknownType => new DiagnosticDescriptor(
         id: "VHSG01",
         title: "Unknown hercules tag type",

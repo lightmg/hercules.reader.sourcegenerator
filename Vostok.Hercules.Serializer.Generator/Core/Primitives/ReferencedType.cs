@@ -1,4 +1,5 @@
 using System;
+using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
 
 namespace Vostok.Hercules.Serializer.Generator.Core.Primitives;
@@ -7,22 +8,22 @@ public readonly struct ReferencedType(string fullName) : IEquatable<ReferencedTy
 {
     public string FullName { get; } = fullName;
 
-    public override string ToString() => 
+    public override string ToString() =>
         FullName;
 
-    public bool Equals(ReferencedType other) => 
+    public bool Equals(ReferencedType other) =>
         FullName == other.FullName;
 
-    public override bool Equals(object? obj) => 
+    public override bool Equals(object? obj) =>
         obj is ReferencedType other && Equals(other);
 
-    public override int GetHashCode() => 
+    public override int GetHashCode() =>
         FullName.GetHashCode();
 
-    public static bool operator ==(ReferencedType left, ReferencedType right) => 
+    public static bool operator ==(ReferencedType left, ReferencedType right) =>
         left.Equals(right);
 
-    public static bool operator !=(ReferencedType left, ReferencedType right) => 
+    public static bool operator !=(ReferencedType left, ReferencedType right) =>
         !left.Equals(right);
 
     public static ReferencedType Void => new("void");
@@ -32,6 +33,9 @@ public readonly struct ReferencedType(string fullName) : IEquatable<ReferencedTy
 
     public static ReferencedType From(Type type) =>
         From(type.FullName!);
+
+    public static ReferencedType From(ITypeSymbol type) =>
+        From(type.ToString());
 
     public static ReferencedType From(TypeBuilder typeBuilder) =>
         From(typeBuilder.FullName);
@@ -50,5 +54,4 @@ public readonly struct ReferencedType(string fullName) : IEquatable<ReferencedTy
     public static implicit operator ReferencedType(TypeBuilder typeBuilder) => From(typeBuilder);
 
     public static implicit operator ReferencedType(string fullName) => From(fullName);
-
 }

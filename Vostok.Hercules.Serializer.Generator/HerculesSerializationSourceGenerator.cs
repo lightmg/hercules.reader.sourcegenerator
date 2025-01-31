@@ -38,17 +38,38 @@ public class HerculesSerializationSourceGenerator : IIncrementalGenerator
                 (type, member) => (type: (INamedTypeSymbol)type!, member),
                 SymbolEqualityComparer.Default
             ))
-            .Select((x, _) => MappingProvider.CreateMapping(x.type, x.member));
+            .Select((x, _) =>
+            {
+                var ctx = new MappingGeneratorContext();
+                EventMapping? eventMapping;
+                try
+                {
+                    eventMapping = MappingProvider.CreateMapping(x.type, x.member, ctx);
+                }
+                catch (Exception e)
+                {
+                    ctx.AddDiagnostic(DiagnosticDescriptors.UnexpectedError, x.type, e);
+                    eventMapping = null;
+                }
 
-        initCtx.RegisterSourceOutput(mappingProvider, Generate);
+                return (ctx.Diagnostics, Mapping: eventMapping);
+            });
+
+        initCtx.RegisterSourceOutput(mappingProvider, static (ctx, result) =>
+            Generate(ctx, result.Mapping, result.Diagnostics)
+        );
     }
 
-    private static void Generate(SourceProductionContext context, CreateMappingResult result)
+    private static void Generate(SourceProductionContext context,
+        EventMapping? mapping,
+        IEnumerable<Diagnostic> diagnostics
+    )
     {
-        foreach (var diagnostic in result.Diagnostics)
+        foreach (var diagnostic in diagnostics)
             context.ReportDiagnostic(diagnostic);
 
-        context.AddTypeSource(HerculesConverterEmitter.CreateType(result.Mapping));
+        if (mapping != null)
+            context.AddTypeSource(HerculesConverterEmitter.CreateType(mapping));
     }
 
     private static (ISymbol member, INamedTypeSymbol containingType) GetPropertyOrFieldInfo(

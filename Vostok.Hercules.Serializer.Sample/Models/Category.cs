@@ -1,5 +1,6 @@
 using System;
 using Vostok.Hercules.Serializer.Generator;
+using Vostok.Hercules.Serializer.Sample.Converters;
 
 namespace Vostok.Hercules.Serializer.Sample.Models;
 
@@ -9,7 +10,7 @@ public class Category : IEntity
     [HerculesTag("id")]
     public Guid Id { get; set; }
 
-    [HerculesTag("created"), HerculesConverter(typeof(Category), nameof(Convert))]
+    [HerculesTag("created"), HerculesConverter(typeof(DateTimeOffsetHerculesConverter))]
     public DateTimeOffset Created { get; set; }
 
     [HerculesTag("name")]
