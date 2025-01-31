@@ -64,15 +64,15 @@ internal static class MappingProvider
         }
 
         var target = TagMapTarget.Create(memberSymbol);
-        var config = CreateMapConfiguration(target, ctx);
-        var source = CreateSource(config, target, matchedAttributes[0].ConstructorArguments, ctx);
+        var converter = CreateConverter(target, ctx);
+        var source = CreateSource(converter, target, matchedAttributes[0].ConstructorArguments, ctx);
         if (source == null)
         {
             tagMap = null!;
             return false;
         }
 
-        tagMap = new TagMap(source, target, config);
+        tagMap = new TagMap(source, target, converter);
         return true;
     }
 
@@ -116,7 +116,7 @@ internal static class MappingProvider
             : new TagMapKeySource(tagKey, ReferencedType.From(sourceType));
     }
 
-    private static TagMapConverter? CreateMapConfiguration(TagMapTarget target, MappingGeneratorContext ctx)
+    private static TagMapConverter? CreateConverter(TagMapTarget target, MappingGeneratorContext ctx)
     {
         var matchedAttributes = target.Symbol.GetAttributes()
             .Where(a => a.AttributeClass?.ToString() == ExposedApi.HerculesConverterAttribute.FullName)
