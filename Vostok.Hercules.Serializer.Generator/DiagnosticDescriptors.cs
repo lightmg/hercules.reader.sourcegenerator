@@ -54,16 +54,6 @@ public static class DiagnosticDescriptors
         isEnabledByDefault: true
     );
 
-    public static DiagnosticDescriptor ConverterMethodShouldBeStatic => new DiagnosticDescriptor(
-        id: "VHSG05",
-        title: "Converter method should be static",
-        messageFormat: "Non-static converter methods are not supported yet. " +
-                       "Consider making method '{0}' in type '{1}' static, or choose different one.",
-        category: Category,
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true
-    );
-
     public static DiagnosticDescriptor MissingParameterlessCtor => new DiagnosticDescriptor(
         id: "VHSG06",
         title: "Missing parameterless constructor",
