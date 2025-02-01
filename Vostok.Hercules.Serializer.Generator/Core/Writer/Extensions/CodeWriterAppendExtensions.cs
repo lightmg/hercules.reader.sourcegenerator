@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
 using Vostok.Hercules.Serializer.Generator.Core.Helpers;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
-using TypeKind = Vostok.Hercules.Serializer.Generator.Core.Primitives.TypeKind;
 
 namespace Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
 
@@ -21,16 +19,13 @@ public static class CodeWriterAppendExtensions
             .AppendType(parameter.Type)
             .Append(" ")
             .Append(parameter.Name)
-            .WhenNotNull(parameter.DefaultValue, (param, w) => w.Append(" = ").Append(param));
-
-    public static CodeWriter AppendKind(this CodeWriter writer, TypeKind kind) =>
-        writer.Append(kind.ToString("G").ToLower());
+            .WhenNotNull(parameter.DefaultValue, static (param, w) => w.Append(" = ").Append(param));
 
     public static CodeWriter AppendAttribute(this CodeWriter writer, string attribute) =>
         writer
-            .When(attribute, a => !a.StartsWith("["), (_, w) => w.Append("["))
+            .When(attribute, a => !a.StartsWith("["), static (_, w) => w.Append("["))
             .Append(attribute)
-            .When(attribute, a => !a.EndsWith("]"), (_, w) => w.Append("]"));
+            .When(attribute, a => !a.EndsWith("]"), static (_, w) => w.Append("]"));
 
     public static CodeWriter AppendType(this CodeWriter writer, ReferencedType type) =>
         writer.Append(type.FullName);

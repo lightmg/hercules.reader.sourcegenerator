@@ -110,7 +110,6 @@ public static class HerculesConverterEmitter
                 .PrependEmitBody(w => WriteFlatMapMethod(w, group.SameKeyEntries))
             );
 
-
     private static IEnumerable<MethodBuilder> CreateVectorMapMethods(EventMapping eventMap) =>
         eventMap.EntriesWithSource<TagMapVectorSource>()
             .GroupBy(x => x.Source.ElementType, (elementType, entries) => (
@@ -211,17 +210,24 @@ public static class HerculesConverterEmitter
             .Append("(value)");
 
     private static CodeWriter AppendPropertyAssignment(this CodeWriter writer, string propertyName, string value) =>
-        writer.Append($"this.").Append(propertyName).Append(" = ").Append(value).AppendLine(";");
+        writer.Append("this.").Append(propertyName).Append(" = ").Append(value).AppendLine(";");
 
     private static CodeWriter WriteIfElseBlock<T>(this CodeWriter writer, IEnumerable<T> items,
         Action<T, CodeWriter> writeCondition,
         Action<T, CodeWriter> writeBody) =>
-        writer.WriteJoin(items, "else ",
-            writeEntry: (item, w) =>
-            {
-                w.Append("if (");
-                writeCondition(item, w);
-                w.AppendLine(")");
-                w.WriteCodeBlock(bw => writeBody(item, bw));
-            });
+        writer.WriteJoin((writeCondition, writeBody), items, "else ",
+            static (writers, item, w) => w.WriteIf(item, writers.writeCondition, writers.writeBody)
+        );
+
+    private static CodeWriter WriteIf<T>(this CodeWriter writer,
+        T arg,
+        Action<T, CodeWriter> writeCondition,
+        Action<T, CodeWriter> then,
+        Action<T, CodeWriter>? @else = null) =>
+        writer
+            .WriteBlock(("if (", ")"), arg, writeCondition)
+            .WriteCodeBlock(arg, then)
+            .WhenNotNull(@else, arg, static (arg, @else, w) => w
+                .AppendLine("else").WriteCodeBlock(arg, @else)
+            );
 }
