@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
-using Vostok.Hercules.Serializer.Generator.Models;
-using Vostok.Hercules.Serializer.Generator.Models.Abstract;
-using Vostok.Hercules.Serializer.Generator.Models.Flat;
-using Vostok.Hercules.Serializer.Generator.Models.Timestamp;
-using Vostok.Hercules.Serializer.Generator.Models.Vector;
+using Vostok.Hercules.Serializer.Generator.Mapping;
+using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
+using Vostok.Hercules.Serializer.Generator.Mapping.Container;
+using Vostok.Hercules.Serializer.Generator.Mapping.Flat;
+using Vostok.Hercules.Serializer.Generator.Mapping.Timestamp;
+using Vostok.Hercules.Serializer.Generator.Mapping.Vector;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
@@ -61,58 +62,21 @@ internal static class MappingProvider
         var converter = CreateConverter(target, ctx);
 
         if (AttributeFinder.FindAttribute(symbol, ExposedApi.HerculesTimestampTagAttribute, ctx))
-            return CreateTimestampMap(target, converter, ctx);
+            return TimestampMapProvider.Create(target, converter, ctx);
 
-        if (AttributeFinder.TryGetAttributeArgs(symbol, ExposedApi.HerculesTagAttribute, ctx, out var args))
-        {
-            if (args.Length != 1 || args[0] is not string tagKey)
-                return null;
+        if (!AttributeFinder.TryGetAttributeArgs(symbol, ExposedApi.HerculesTagAttribute, ctx, out var args))
+            return null;
 
-            return TypeUtilities.IsVector(target.Type, out var elementType, out var vectorType)
-                ? CreateVectorMap(target, tagKey, converter, elementType, vectorType)
-                : CreateFlatMap(target, tagKey, converter);
-        }
+        if (args.Length != 1 || args[0] is not string tagKey)
+            return null;
 
-        return null;
-    }
+        if (TypeUtilities.IsContainer(target.Type))
+            return ContainerMapProvider.Create(target, tagKey);
 
-    private static VectorTagMap CreateVectorMap(
-        TagMapTarget target,
-        string tagKey,
-        TagMapConverter? converter,
-        ITypeSymbol elementType,
-        VectorType vectorType
-    )
-    {
-        var sourceType = InferSourceType(converter, elementType);
-        var source = TypeUtilities.IsNullable(sourceType, out var underlyingType)
-            ? new TagMapVectorSource(tagKey, ReferencedType.From(underlyingType))
-            : new TagMapVectorSource(tagKey, ReferencedType.From(sourceType));
+        if (TypeUtilities.IsVector(target.Type, out var elementType, out var vectorType))
+            return VectorMapProvider.Create(target, tagKey, converter, elementType, vectorType);
 
-        var vectorTarget = new TagMapVectorTarget(target, elementType, vectorType);
-        return new VectorTagMap(source, vectorTarget, converter);
-    }
-
-    private static FlatTagMap CreateFlatMap(TagMapTarget target, string tagKey, TagMapConverter? converter)
-    {
-        var sourceType = InferSourceType(converter, target.Type);
-        var source = TypeUtilities.IsNullable(sourceType, out var underlyingType)
-            ? new TagMapFlatSource(tagKey, ReferencedType.From(underlyingType))
-            : new TagMapFlatSource(tagKey, ReferencedType.From(sourceType));
-
-        return new FlatTagMap(source, target, converter);
-    }
-
-    private static TimestampTagMap CreateTimestampMap(TagMapTarget target, TagMapConverter? converter,
-        MappingGeneratorContext ctx)
-    {
-        if (converter.HasValue && converter.Value.InType != typeof(DateTimeOffset))
-            ctx.AddDiagnostic(DiagnosticDescriptors.InvalidTimestampTagType, target.Symbol,
-                typeof(DateTimeOffset), converter.Value.InType
-            );
-
-        var source = new TagMapTimestampSource();
-        return new TimestampTagMap(source, target, converter);
+        return FlatMapProvider.Create(target, tagKey, converter);
     }
 
     private static TagMapConverter? CreateConverter(TagMapTarget target, MappingGeneratorContext ctx) =>
@@ -122,15 +86,12 @@ internal static class MappingProvider
             ? new TagMapConverter(convertMethod)
             : null;
 
-    private static ITypeSymbol InferSourceType(TagMapConverter? conveter, ITypeSymbol targetType) =>
-        conveter?.Method.Parameters[0].Type ?? targetType;
-
     private static (ITypeSymbol type, string name)? GetConverterInfo(AttributeData attribute) =>
         attribute.AttributeConstructor?.Parameters.Length switch
         {
             1 when attribute.AttributeConstructor.Parameters[0].Name == "converterType" &&
                    attribute.ConstructorArguments[0].Value is ITypeSymbol converterType =>
-                (converterType, ExposedApi.HerculesConverterType.Methods.First().Name),
+                (converterType, ExposedApi.IHerculesConverter.Methods.First().Name),
             2 when attribute.AttributeConstructor.Parameters[0].Name == "convertMethodContainingType" &&
                    attribute.AttributeConstructor.Parameters[1].Name == "convertMethodName" &&
                    attribute.ConstructorArguments[0].Value is ITypeSymbol containingType &&

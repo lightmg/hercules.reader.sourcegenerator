@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Extensions;
-using Vostok.Hercules.Serializer.Generator.Models.Abstract;
+using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 
-namespace Vostok.Hercules.Serializer.Generator.Models;
+namespace Vostok.Hercules.Serializer.Generator.Mapping;
 
 public class EventMapping : IEquatable<EventMapping>
 {
@@ -17,9 +16,6 @@ public class EventMapping : IEquatable<EventMapping>
     public INamedTypeSymbol Type { get; }
 
     public IList<ITagMap> Entries { get; } = [];
-
-    public IEnumerable<ITagMap<T>> EntriesWithSource<T>() where T : ITagMapSource =>
-        Entries.OfType<ITagMap<T>>();
 
     public bool Equals(EventMapping? other)
     {

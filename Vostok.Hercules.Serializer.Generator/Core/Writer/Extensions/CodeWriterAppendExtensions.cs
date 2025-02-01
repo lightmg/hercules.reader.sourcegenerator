@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
 using Vostok.Hercules.Serializer.Generator.Core.Helpers;
@@ -8,6 +9,17 @@ namespace Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
 
 public static class CodeWriterAppendExtensions
 {
+    public static CodeWriter AppendGeneric(this CodeWriter writer, GenericTypeBuilder builder)
+    {
+        var variance = builder.Variance switch
+        {
+            VarianceKind.Out => "out ",
+            VarianceKind.In => "in ",
+            _ => string.Empty
+        };
+        return writer.Append(variance).Append(builder.Name);
+    }
+
     public static CodeWriter AppendJoin(this CodeWriter writer, string separator, IEnumerable<string> values) =>
         writer.WriteJoin(values, separator, static (current, w) => w.Append(current));
 

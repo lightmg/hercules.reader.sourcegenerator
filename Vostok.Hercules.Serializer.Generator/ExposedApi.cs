@@ -4,12 +4,15 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extensions;
+using Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Types.Abstract;
+using Vostok.Hercules.Serializer.Generator.Services;
 
 namespace Vostok.Hercules.Serializer.Generator;
 
-[SuppressMessage("ReSharper", "UnusedMember.Global")] // used implicitly via 'All' property
+[SuppressMessage("ReSharper", "UnusedMember.Global")]
+[SuppressMessage("ReSharper", "InconsistentNaming")] // used implicitly via 'All' property
 internal static class ExposedApi
 {
     /*
@@ -17,7 +20,7 @@ internal static class ExposedApi
      *   - specify converter type via generic attribute
      */
 
-    private const string Namespace = "Vostok.Hercules.Serializer.Generator";
+    public const string Namespace = "Vostok.Hercules.Serializer.Generator";
 
     public static readonly AttributeTypeBuilder GenerateHerculesReaderAttribute =
         new AttributeTypeBuilder(Namespace, nameof(GenerateHerculesReaderAttribute))
@@ -49,13 +52,13 @@ internal static class ExposedApi
 
     public static readonly AttributeTypeBuilder HerculesTimestampTagAttribute =
         new AttributeTypeBuilder(Namespace, nameof(HerculesTimestampTagAttribute))
-            {
-                Accessibility = Accessibility.Internal,
-                Usage = AttributeTargets.Property | AttributeTargets.Field
-            };
+        {
+            Accessibility = Accessibility.Internal,
+            Usage = AttributeTargets.Property | AttributeTargets.Field
+        };
 
-    public static readonly InterfaceBuilder HerculesConverterType =
-        new InterfaceBuilder(Namespace, "IHerculesConverter")
+    public static readonly InterfaceBuilder IHerculesConverter =
+        new InterfaceBuilder(Namespace, nameof(IHerculesConverter))
         {
             Generics = { "TValue", "THerculesValue" },
             Methods =
@@ -87,6 +90,20 @@ internal static class ExposedApi
         {
             Accessibility = Accessibility.Internal,
             Usage = AttributeTargets.Class
+        };
+
+    public static readonly InterfaceBuilder IHerculesEventBuilderProvider =
+        new InterfaceBuilder(Namespace, nameof(IHerculesEventBuilderProvider))
+        {
+            Accessibility = Accessibility.Internal,
+            Generics = { new("THerculesEvent") {Variance = VarianceKind.Out} },
+            Methods =
+            {
+                new MethodBuilder("Get")
+                {
+                    ReturnType = HerculesConverterEmitter.EventBuilderInterfaceType("THerculesEvent")
+                }
+            }
         };
 
     internal static readonly ITypeBuilder[] All = typeof(ExposedApi)

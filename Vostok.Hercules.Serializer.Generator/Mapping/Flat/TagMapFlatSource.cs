@@ -1,8 +1,8 @@
 ﻿using System;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
-using Vostok.Hercules.Serializer.Generator.Models.Abstract;
+using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 
-namespace Vostok.Hercules.Serializer.Generator.Models.Flat;
+namespace Vostok.Hercules.Serializer.Generator.Mapping.Flat;
 
 public sealed class TagMapFlatSource(string key, ReferencedType type) : ITagMapSource, IEquatable<TagMapFlatSource>
 {

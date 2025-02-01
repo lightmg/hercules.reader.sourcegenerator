@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Vostok.Hercules.Serializer.Generator.Extensions;
-using Vostok.Hercules.Serializer.Generator.Models;
+using Vostok.Hercules.Serializer.Generator.Mapping;
 using Vostok.Hercules.Serializer.Generator.Services;
 
 namespace Vostok.Hercules.Serializer.Generator;
@@ -15,10 +16,18 @@ public class HerculesSerializationSourceGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext initCtx)
     {
-        initCtx.RegisterPostInitializationOutput(ctx =>
-        {
-            ctx.AddTypeSources(ExposedApi.All);
-        });
+        initCtx.RegisterPostInitializationOutput(ctx => { ctx.AddTypeSources(ExposedApi.All); });
+
+        var iHerculesTagsBuilderProvider = initCtx.CompilationProvider
+            .Select((c, _) => c.GetTypeByMetadataName(HerculesConverterEmitter.TagsBuilderInterfaceType));
+
+        initCtx.RegisterSourceOutput(iHerculesTagsBuilderProvider,
+            (ctx, interfaceType) =>
+            {
+                if (interfaceType != null)
+                    ctx.AddTypeSource(HerculesProxyTagsBuilderEmitter.CreateProxy(interfaceType));
+            }
+        );
 
         var mappingProvider = initCtx.SyntaxProvider
             .ForAttributeWithMetadataName(

@@ -1,9 +1,9 @@
-﻿using Vostok.Hercules.Serializer.Generator.Models.Abstract;
+﻿using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 
-namespace Vostok.Hercules.Serializer.Generator.Models.Vector;
+namespace Vostok.Hercules.Serializer.Generator.Mapping.Vector;
 
 public class VectorTagMap(TagMapVectorSource source, TagMapVectorTarget target, TagMapConverter? converter)
-    : ITagMap<TagMapVectorSource>
+    : IConvertibleTagMap<TagMapVectorSource>
 {
     ITagMapSource ITagMap.Source => Source;
     TagMapTarget ITagMap.Target => Target;

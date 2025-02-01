@@ -4,8 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
-using Vostok.Hercules.Serializer.Generator.Models;
-using Vostok.Hercules.Serializer.Generator.Models.Vector;
+using Vostok.Hercules.Serializer.Generator.Mapping.Vector;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
@@ -16,6 +15,9 @@ public static class TypeUtilities
 
     public static ITypeSymbol UnwrapNullable(ITypeSymbol type) =>
         IsNullable(type, out var underlying) ? underlying : type;
+
+    public static bool IsContainer(ITypeSymbol type) =>
+        type.GetAttributes(ExposedApi.GenerateHerculesReaderAttribute).Any();
 
     public static bool IsVector(ITypeSymbol type, out ITypeSymbol elementType, out VectorType vectorType)
     {

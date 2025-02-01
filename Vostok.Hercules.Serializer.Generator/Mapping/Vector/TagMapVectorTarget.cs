@@ -1,6 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 
-namespace Vostok.Hercules.Serializer.Generator.Models.Vector;
+namespace Vostok.Hercules.Serializer.Generator.Mapping.Vector;
 
 public class TagMapVectorTarget(ISymbol symbol, ITypeSymbol elementType, VectorType vectorType) : TagMapTarget(symbol)
 {

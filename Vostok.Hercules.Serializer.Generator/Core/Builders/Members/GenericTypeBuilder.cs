@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Extensions;
 
@@ -9,9 +10,11 @@ public class GenericTypeBuilder(string name)
 {
     public string Name { get; } = name;
 
-    public IList<ReferencedType> Constraints { get; } = [];
+    public IList<ReferencedType> Constraints { get; set; } = [];
 
     public bool HasNewConstraint { get; set; }
+
+    public VarianceKind Variance { get; set; }
 
     public IEnumerable<string> AllConstraints =>
         Constraints.Select(c => c.FullName).PrependWhen(HasNewConstraint, "new()");

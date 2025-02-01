@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 
-namespace Vostok.Hercules.Serializer.Generator.Models;
+namespace Vostok.Hercules.Serializer.Generator.Mapping;
 
 public readonly record struct TagMapConverter
 {

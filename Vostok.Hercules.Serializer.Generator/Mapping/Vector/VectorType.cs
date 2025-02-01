@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Vostok.Hercules.Serializer.Generator.Models.Vector;
+namespace Vostok.Hercules.Serializer.Generator.Mapping.Vector;
 
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 public enum VectorType

@@ -1,9 +1,9 @@
-﻿using Vostok.Hercules.Serializer.Generator.Models.Abstract;
+﻿using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 
-namespace Vostok.Hercules.Serializer.Generator.Models.Flat;
+namespace Vostok.Hercules.Serializer.Generator.Mapping.Flat;
 
 public class FlatTagMap(TagMapFlatSource source, TagMapTarget target, TagMapConverter? converter)
-    : ITagMap<TagMapFlatSource>
+    : IConvertibleTagMap<TagMapFlatSource>
 {
     ITagMapSource ITagMap.Source => Source;
 

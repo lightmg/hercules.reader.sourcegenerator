@@ -1,8 +1,8 @@
 ﻿using System;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
-using Vostok.Hercules.Serializer.Generator.Models.Abstract;
+using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 
-namespace Vostok.Hercules.Serializer.Generator.Models.Vector;
+namespace Vostok.Hercules.Serializer.Generator.Mapping.Vector;
 
 public sealed class TagMapVectorSource(string key, ReferencedType elementType)
     : ITagMapSource, IEquatable<TagMapVectorSource>

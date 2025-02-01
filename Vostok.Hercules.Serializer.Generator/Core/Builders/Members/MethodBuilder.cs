@@ -26,6 +26,8 @@ public class MethodBuilder : IMethodBodyBuilder, ITypeMemberBuilder
 
     public bool IsOverride { get; set; } = false;
 
+    public bool IsNew { get; set; } = false;
+
     public Action<CodeWriter>? EmitBody { get; set; }
 
     public Accessibility Accessibility { get; set; } = Accessibility.Public;

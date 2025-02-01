@@ -10,6 +10,21 @@ namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extens
 
 public static class TypeBuilderExtensions
 {
+    public static string GetFullName(this StatefulTypeBuilder builder, params string[] genericArgs)
+    {
+        if (builder.Generics.Count != genericArgs.Length)
+            throw new ArgumentException(
+                $"Generic arguments count mismatch: expected {builder.Generics.Count}, got {genericArgs.Length}",
+                nameof(genericArgs)
+            );
+
+        if (builder.Generics.Count == 0)
+            return builder.FullName;
+
+        var joinedArgs = string.Join(", ", genericArgs);
+        return $"{builder.Namespace}.{builder.Name}<{joinedArgs}>";
+    }
+
     public static TBuilder AppendEmitBody<TBuilder>(this TBuilder builder, Action<CodeWriter> emitBody)
         where TBuilder : IMethodBodyBuilder
     {

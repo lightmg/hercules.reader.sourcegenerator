@@ -1,9 +1,9 @@
-﻿using Vostok.Hercules.Serializer.Generator.Models.Abstract;
+﻿using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 
-namespace Vostok.Hercules.Serializer.Generator.Models.Timestamp;
+namespace Vostok.Hercules.Serializer.Generator.Mapping.Timestamp;
 
 public class TimestampTagMap(TagMapTimestampSource source, TagMapTarget target, TagMapConverter? converter)
-    : ITagMap<TagMapTimestampSource>
+    : IConvertibleTagMap<TagMapTimestampSource>
 {
     ITagMapSource ITagMap.Source => Source;
 

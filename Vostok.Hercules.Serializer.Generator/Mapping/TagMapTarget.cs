@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Services;
 
-namespace Vostok.Hercules.Serializer.Generator.Models;
+namespace Vostok.Hercules.Serializer.Generator.Mapping;
 
 public class TagMapTarget
 {
