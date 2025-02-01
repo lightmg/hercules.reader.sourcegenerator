@@ -10,6 +10,9 @@ public class InstanceConverters
     public string LongToString(long someValue) => 
         someValue.ToString();
 
+    public string ExtractDomain(string email) => 
+        email + "domain";
+
     public long ParseTimestamp(DateTimeOffset timestamp) => 
         timestamp.Ticks;
 }

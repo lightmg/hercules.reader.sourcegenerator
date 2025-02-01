@@ -4,6 +4,8 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
+using Vostok.Hercules.Serializer.Generator.Models;
+using Vostok.Hercules.Serializer.Generator.Models.Vector;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
@@ -15,32 +17,63 @@ public static class TypeUtilities
     public static ITypeSymbol UnwrapNullable(ITypeSymbol type) =>
         IsNullable(type, out var underlying) ? underlying : type;
 
-    public static bool IsVector(ITypeSymbol type, out ITypeSymbol elementType)
+    public static bool IsVector(ITypeSymbol type, out ITypeSymbol elementType, out VectorType vectorType)
     {
         if (type.SpecialType is SpecialType.System_String)
         {
             elementType = type;
+            vectorType = default;
             return false;
         }
 
         if (type is IArrayTypeSymbol array)
         {
             elementType = array.ElementType;
+            vectorType = VectorType.Array;
             return true;
         }
 
-        if (type.OriginalDefinition.SpecialType is (
-            SpecialType.System_Collections_Generic_IEnumerable_T or
-            SpecialType.System_Collections_Generic_ICollection_T or
-            SpecialType.System_Collections_Generic_IReadOnlyCollection_T or
-            SpecialType.System_Collections_Generic_IList_T or
-            SpecialType.System_Collections_Generic_IReadOnlyList_T))
+        if (type is not INamedTypeSymbol { TypeArguments: { Length: 1 } genericArgsLen1 })
         {
-            elementType = type is INamedTypeSymbol {Arity: 1} named ? named.TypeArguments[0] : type;
-            return true;
+            elementType = type;
+            vectorType = default;
+            return false;
         }
 
-        elementType = type;
+        elementType = genericArgsLen1[0];
+        switch (type.OriginalDefinition.OriginalDefinition.SpecialType)
+        {
+            case SpecialType.System_Collections_Generic_IEnumerable_T:
+                vectorType = VectorType.IEnumerable;
+                return true;
+            case SpecialType.System_Collections_Generic_ICollection_T:
+                vectorType = VectorType.ICollection;
+                return true;
+            case SpecialType.System_Collections_Generic_IReadOnlyCollection_T:
+                vectorType = VectorType.IReadOnlyCollection;
+                return true;
+            case SpecialType.System_Collections_Generic_IList_T:
+                vectorType = VectorType.IList;
+                return true;
+            case SpecialType.System_Collections_Generic_IReadOnlyList_T:
+                vectorType = VectorType.IReadOnlyList;
+                return true;
+        }
+
+        switch (type.OriginalDefinition.ToString())
+        {
+            case "System.Collections.Generic.HashSet<T>":
+                vectorType = VectorType.HashSet;
+                return true;
+            case "System.Collections.Generic.ISet<T>":
+                vectorType = VectorType.ISet;
+                return true;
+            case "System.Collections.Generic.IReadOnlySet<T>":
+                vectorType = VectorType.IReadOnlySet;
+                return true;
+        }
+
+        vectorType = default;
         return false;
     }
 

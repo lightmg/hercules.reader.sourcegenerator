@@ -12,7 +12,7 @@ namespace Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
 
 public static class CodeWriterWriteExtensions
 {
-    private static (string, string) Brackets => ("{", "}");
+    private static (string, string) Brackets => ("{\n", "}\n");
     private static (string, string) Parentheses => ("(", ")");
 
     public static CodeWriter WriteMethods(this CodeWriter writer, IEnumerable<MethodBuilder> methods)
@@ -44,9 +44,10 @@ public static class CodeWriterWriteExtensions
             );
 
     public static CodeWriter WriteParameters(this CodeWriter writer, IEnumerable<ParameterBuilder> parameters) =>
-        writer.WriteBlock(Parentheses, parameters, static (parameters, w) => w
-            .WriteJoin(parameters, ",\n", static (p, pw) => pw.AppendParameter(p))
-        );
+        writer
+            .WriteBlock(Parentheses, parameters, static (parameters, w) => w
+                .WriteJoin(parameters, ",\n", static (p, pw) => pw.AppendParameter(p))
+            );
 
     public static CodeWriter WriteProperties(this CodeWriter writer, IEnumerable<PropertyBuilder> properties) =>
         writer.WriteJoin(properties, null, static (property, w) => w.WriteProperty(property).AppendLine());
@@ -155,12 +156,12 @@ public static class CodeWriterWriteExtensions
     public static CodeWriter WriteBlock<T>(this CodeWriter writer, (string open, string close) separators,
         T arg, Action<T, CodeWriter> writeBlock)
     {
-        writer.AppendLine(separators.open);
+        writer.Append(separators.open);
 
         var blockWriter = writer.EnterBlock();
         writeBlock(arg, blockWriter);
 
-        writer.AppendLine(separators.close);
+        writer.Append(separators.close);
 
         return writer;
     }

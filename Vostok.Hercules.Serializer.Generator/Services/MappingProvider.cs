@@ -4,7 +4,10 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Models;
-using Vostok.Hercules.Serializer.Generator.Models.Sources;
+using Vostok.Hercules.Serializer.Generator.Models.Abstract;
+using Vostok.Hercules.Serializer.Generator.Models.Flat;
+using Vostok.Hercules.Serializer.Generator.Models.Timestamp;
+using Vostok.Hercules.Serializer.Generator.Models.Vector;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
@@ -24,7 +27,7 @@ internal static class MappingProvider
                 continue;
 
             mapping.Entries.Add(map);
-            ValidateTagMap(map, member, ctx);
+            ValidateTagMap(map, ctx);
         }
 
         ValidateMapping(mapping, ctx);
@@ -37,18 +40,24 @@ internal static class MappingProvider
             ctx.AddDiagnostic(DiagnosticDescriptors.MissingParameterlessCtor, mapping.Type, mapping.Type.ToString());
     }
 
-    private static void ValidateTagMap(TagMap map, ISymbol member, MappingGeneratorContext ctx)
+    private static void ValidateTagMap(ITagMap map, MappingGeneratorContext ctx)
     {
-        if (map.Source is not TagMapFlatSource)
-            return;
-
-        if (!TypeUtilities.IsHerculesPrimitive(map.Source.Type))
-            ctx.AddDiagnostic(DiagnosticDescriptors.UnknownType, member, map.Source.Type);
+        switch (map)
+        {
+            case FlatTagMap flatMap:
+                if (!TypeUtilities.IsHerculesPrimitive(flatMap.Source.Type))
+                    ctx.AddDiagnostic(DiagnosticDescriptors.UnknownType, map.Target.Symbol, flatMap.Source.Type);
+                break;
+            case VectorTagMap flatMap:
+                if (!TypeUtilities.IsHerculesPrimitive(flatMap.Source.ElementType))
+                    ctx.AddDiagnostic(DiagnosticDescriptors.UnknownType, map.Target.Symbol, flatMap.Source.ElementType);
+                break;
+        }
     }
 
-    private static TagMap? CreateMapOrNull(ISymbol symbol, MappingGeneratorContext ctx)
+    private static ITagMap? CreateMapOrNull(ISymbol symbol, MappingGeneratorContext ctx)
     {
-        var target = TagMapTarget.Create(symbol);
+        var target = new TagMapTarget(symbol);
         var converter = CreateConverter(target, ctx);
 
         if (AttributeFinder.FindAttribute(symbol, ExposedApi.HerculesTimestampTagAttribute, ctx))
@@ -59,40 +68,42 @@ internal static class MappingProvider
             if (args.Length != 1 || args[0] is not string tagKey)
                 return null;
 
-            return TypeUtilities.IsVector(target.Type, out var elementType)
-                ? CreateVectorMap(target, tagKey, converter, elementType)
+            return TypeUtilities.IsVector(target.Type, out var elementType, out var vectorType)
+                ? CreateVectorMap(target, tagKey, converter, elementType, vectorType)
                 : CreateFlatMap(target, tagKey, converter);
         }
 
         return null;
     }
 
-    private static TagMap CreateVectorMap(
+    private static VectorTagMap CreateVectorMap(
         TagMapTarget target,
         string tagKey,
         TagMapConverter? converter,
-        ITypeSymbol elementType
+        ITypeSymbol elementType,
+        VectorType vectorType
     )
     {
         var sourceType = InferSourceType(converter, elementType);
         var source = TypeUtilities.IsNullable(sourceType, out var underlyingType)
-            ? new TagMapVectorSource(tagKey, ReferencedType.From(target.Type), ReferencedType.From(underlyingType))
-            : new TagMapVectorSource(tagKey, ReferencedType.From(target.Type), ReferencedType.From(sourceType));
+            ? new TagMapVectorSource(tagKey, ReferencedType.From(underlyingType))
+            : new TagMapVectorSource(tagKey, ReferencedType.From(sourceType));
 
-        return new TagMap(source, target, converter);
+        var vectorTarget = new TagMapVectorTarget(target, elementType, vectorType);
+        return new VectorTagMap(source, vectorTarget, converter);
     }
 
-    private static TagMap CreateFlatMap(TagMapTarget target, string tagKey, TagMapConverter? converter)
+    private static FlatTagMap CreateFlatMap(TagMapTarget target, string tagKey, TagMapConverter? converter)
     {
         var sourceType = InferSourceType(converter, target.Type);
         var source = TypeUtilities.IsNullable(sourceType, out var underlyingType)
             ? new TagMapFlatSource(tagKey, ReferencedType.From(underlyingType))
             : new TagMapFlatSource(tagKey, ReferencedType.From(sourceType));
 
-        return new TagMap(source, target, converter);
+        return new FlatTagMap(source, target, converter);
     }
 
-    private static TagMap CreateTimestampMap(TagMapTarget target, TagMapConverter? converter,
+    private static TimestampTagMap CreateTimestampMap(TagMapTarget target, TagMapConverter? converter,
         MappingGeneratorContext ctx)
     {
         if (converter.HasValue && converter.Value.InType != typeof(DateTimeOffset))
@@ -101,7 +112,7 @@ internal static class MappingProvider
             );
 
         var source = new TagMapTimestampSource();
-        return new TagMap(source, target, converter);
+        return new TimestampTagMap(source, target, converter);
     }
 
     private static TagMapConverter? CreateConverter(TagMapTarget target, MappingGeneratorContext ctx) =>

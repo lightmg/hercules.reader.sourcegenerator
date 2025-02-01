@@ -20,10 +20,10 @@ public static class Program
 
         public IHerculesTagsBuilder AddVector(string key, IReadOnlyList<short> values)
         {
-            throw new NotImplementedException();
+            return this;
         }
 
-        public IHerculesEventBuilder AddContainer(string key, Action<IHerculesTagsBuilder> valueBuilder)
+        public IHerculesTagsBuilder AddContainer(string key, Action<IHerculesTagsBuilder> valueBuilder)
         {
             if (key == "category")
             {
@@ -31,6 +31,8 @@ public static class Program
                 valueBuilder(catbuilder);
                 _ = catbuilder.BuildEvent();
             }
+
+            return this;
         }
     }
 }

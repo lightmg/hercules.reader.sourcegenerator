@@ -24,6 +24,9 @@ public class HerculesSerializationSourceGeneratorTests
         [GenerateHerculesReader]
         public class Model 
         {
+            [HerculesTag("hsv")]
+            public HashSet<string> HashSetVector { get; set; }
+
             [HerculesTag("sv")]
             public IReadOnlyList<string> StringVector { get; set; }
 

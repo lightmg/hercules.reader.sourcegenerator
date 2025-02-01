@@ -12,7 +12,10 @@ using Vostok.Hercules.Serializer.Generator.Core.Writer;
 using Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
 using Vostok.Hercules.Serializer.Generator.Extensions;
 using Vostok.Hercules.Serializer.Generator.Models;
-using Vostok.Hercules.Serializer.Generator.Models.Sources;
+using Vostok.Hercules.Serializer.Generator.Models.Abstract;
+using Vostok.Hercules.Serializer.Generator.Models.Flat;
+using Vostok.Hercules.Serializer.Generator.Models.Timestamp;
+using Vostok.Hercules.Serializer.Generator.Models.Vector;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
@@ -41,12 +44,6 @@ public static class HerculesConverterEmitter
             Interfaces = { EventBuilderInterfaceType(targetTypeFullName) },
             Properties = { PropertyBuilder.ReadOnlyField("Current", targetTypeFullName, Accessibility.Public) }
         };
-
-        if (eventMap.EntriesWithSource<TagMapVectorSource>().Any())
-            builder.Usings.AddRange([
-                "System.Collections.Generic",
-                "System.Linq"
-            ]);
 
         var requiredServices = eventMap.Entries
             .Select(e => e.Converter)
@@ -92,7 +89,7 @@ public static class HerculesConverterEmitter
     }
 
     private static IEnumerable<MethodBuilder> CreateFlatMapMethods(EventMapping eventMap) =>
-        eventMap.EntriesWithSource<TagMapFlatSource>()
+        eventMap.Entries.OfType<FlatTagMap>()
             .GroupBy(x => x.Source.Type, (sourceType, entries) => (
                 KeyType: sourceType,
                 SameKeyEntries: entries.GroupBy(y => y.Source.Key)
@@ -111,12 +108,12 @@ public static class HerculesConverterEmitter
             );
 
     private static IEnumerable<MethodBuilder> CreateVectorMapMethods(EventMapping eventMap) =>
-        eventMap.EntriesWithSource<TagMapVectorSource>()
+        eventMap.Entries.OfType<VectorTagMap>()
             .GroupBy(x => x.Source.ElementType, (elementType, entries) => (
                 ElementType: elementType,
                 SameKeyEntries: entries.GroupBy(y => y.Source.Key)
             ))
-            .Select(group => new MethodBuilder("AddValue")
+            .Select(group => new MethodBuilder("AddValues")
                 {
                     Accessibility = Accessibility.Public,
                     Parameters =
@@ -136,7 +133,7 @@ public static class HerculesConverterEmitter
             ReturnType = mapping.Type.ToString(),
             EmitBody = writer => writer
                 .WriteIfElseBlock(mapping.Entries.Where(e => !e.Target.IsNullable),
-                    writeCondition: (tag, w) => w.Append($"this.Current.{tag.Target.Name} == null"),
+                    writeCondition: (tag, w) => w.AppendTargetReference(tag.Target).Append(" == null"),
                     writeBody: (tag, w) => w.WriteThrowHerculesValidationException(tag.Target.Name)
                 )
                 .AppendLine("return this.Current;")
@@ -150,9 +147,9 @@ public static class HerculesConverterEmitter
             Parameters = { new ParameterBuilder("value", ReferencedType.From<DateTimeOffset>()) },
             EmitBody = writer => writer
                 .WriteJoin(
-                    mapping.EntriesWithSource<TagMapTimestampSource>(),
+                    mapping.Entries.OfType<TimestampTagMap>(),
                     "\n",
-                    (map, w) => WriteFlatAssignment(w, map)
+                    (map, w) => WriteTimestampAssignment(w, map)
                 )
                 .AppendLine("return this;")
         };
@@ -161,16 +158,16 @@ public static class HerculesConverterEmitter
         writer.AppendLine($"throw new {ExposedApi.ValidationExceptionType.FullName}(\"{propertyName}\");");
 
     private static void WriteVectorMapMethod(CodeWriter writer,
-        IEnumerable<IGrouping<string, TagMap<TagMapVectorSource>>> entriesByKey) =>
+        IEnumerable<IGrouping<string, VectorTagMap>> entriesByKey) =>
         writer
             .WriteIfElseBlock(entriesByKey,
                 writeCondition: (entries, w) => w.Append($"key == \"{entries.Key}\""),
-                writeBody: (entries, w) => w.WriteJoin(entries, "\n", (e, ew) => WriteVectorAssignment(ew, e))
+                writeBody: WriteVectorAssignments
             )
             .AppendLine("return this;");
 
     private static void WriteFlatMapMethod(CodeWriter writer,
-        IEnumerable<IGrouping<string, TagMap<TagMapFlatSource>>> entriesByKey) =>
+        IEnumerable<IGrouping<string, FlatTagMap>> entriesByKey) =>
         writer
             .WriteIfElseBlock(entriesByKey,
                 writeCondition: (entries, w) => w.Append($"key == \"{entries.Key}\""),
@@ -179,22 +176,84 @@ public static class HerculesConverterEmitter
             .AppendLine("return this;");
 
     private static string? GetConverterFieldName(TagMapConverter? converter) =>
-        converter?.Method.IsStatic is false ? $"__{converter.Value.Method.ContainingType.Name}" : null;
+        converter?.Method.IsStatic is false
+            ? $"__{TextCaseConverter.ToLowerCamelCase(converter.Value.Method.ContainingType.Name)}"
+            : null;
 
-    private static void WriteFlatAssignment(CodeWriter writer, TagMap map) =>
-        writer
-            .Append($"this.Current.{map.Target.Name} = ")
-            .WriteValueWithConversion(map.Converter)
-            .AppendLine(';');
+    private static void WriteFlatAssignment(CodeWriter writer, FlatTagMap map) =>
+        writer.WriteAssignment(map, static (map, w) => w.WriteValueWithConversion(map.Converter));
 
-    private static void WriteVectorAssignment(CodeWriter writer, TagMap map) =>
-        writer
-            .Append($"this.Current.{map.Target.Name} = values")
-            .WhenNotNull(map.Converter, (c, w) => w
-                .Append(".Select(value => ")
-                .WriteConverterInvoction(c)
-                .Append(").ToList()"))
-            .AppendLine(';');
+    private static void WriteTimestampAssignment(CodeWriter writer, TimestampTagMap map) =>
+        writer.WriteAssignment(map, static (map, w) => w.WriteValueWithConversion(map.Converter));
+
+    private static void WriteAssignment<T>(this CodeWriter writer, T map, Action<T, CodeWriter> writeValue)
+        where T : ITagMap
+    {
+        writer.AppendTargetReference(map.Target).Append(" = ");
+        writeValue(map, writer);
+        writer.AppendLine(';');
+    }
+
+    private static CodeWriter AppendTargetReference(this CodeWriter writer, TagMapTarget target) =>
+        writer.Append("this.Current.").Append(target.Name);
+
+    private static void WriteVectorAssignments(IGrouping<string, VectorTagMap> vectors, CodeWriter writer)
+    {
+        writer.WriteJoin(vectors, null, static (map, w) => w
+                .Append("var ").Append(GetVectorName(map)).Append(" = ")
+                .When(map, IsArrayStyleInit, (map, w) => w.Append($"new {map.Target.ElementType}[values.Count]"))
+                .When(map, IsListStyleInit, (map, w) => w.Append($"new List<{map.Target.ElementType}>(values.Count)"))
+                .When(map, IsHashSetStyleInit, (map, w) => w.Append($"new HashSet<{map.Target.ElementType}>()"))
+                .AppendLine(";")
+            )
+            .AppendLine("var index = 0;")
+            .WriteForeach(vectors, "value", "values", static (vectors, w) => w
+                .WriteJoin(vectors, null, static (vector, w) => w
+                    .When(vector, IsArrayStyleInit,
+                        then: static (vector, w) => w
+                            .Append(GetVectorName(vector))
+                            .Append("[index++] = ")
+                            .WriteValueWithConversion(vector.Converter)
+                            .AppendLine(";"),
+                        @else: static (vector, w) => w
+                            .Append(GetVectorName(vector))
+                            .Append(".Add(")
+                            .WriteValueWithConversion(vector.Converter)
+                            .AppendLine(");")
+                    )
+                )
+            )
+            .WriteJoin(vectors, null, static (map, w) => w
+                .WriteAssignment(map, static (map, w) => w.Append(GetVectorName(map)))
+            );
+
+        return;
+
+        static bool IsArrayStyleInit(VectorTagMap map) =>
+            map.Target.VectorType is
+                VectorType.Array or
+                VectorType.IEnumerable or
+                VectorType.IReadOnlyCollection or
+                VectorType.IReadOnlyList;
+
+        static bool IsListStyleInit(VectorTagMap map) =>
+            map.Target.VectorType is
+                VectorType.ICollection or
+                VectorType.IList or
+                VectorType.List;
+
+        static bool IsHashSetStyleInit(VectorTagMap map) =>
+            map.Target.VectorType is
+                VectorType.ISet or
+                VectorType.IReadOnlySet or
+                VectorType.HashSet;
+
+        static string GetVectorName(VectorTagMap map) =>
+            TextCaseConverter.ToLowerCamelCase(map.Target.Name);
+    }
+
+    private static CodeWriter WriteCast(this CodeWriter writer, ReferencedType to) =>
+        writer.Append("(").AppendType(to).Append(")");
 
     private static CodeWriter WriteValueWithConversion(this CodeWriter writer, TagMapConverter? converter) =>
         writer.WhenNotNull(converter,
@@ -225,9 +284,16 @@ public static class HerculesConverterEmitter
         Action<T, CodeWriter> then,
         Action<T, CodeWriter>? @else = null) =>
         writer
-            .WriteBlock(("if (", ")"), arg, writeCondition)
+            .WriteBlock(("if (", ")\n"), arg, writeCondition)
             .WriteCodeBlock(arg, then)
             .WhenNotNull(@else, arg, static (arg, @else, w) => w
                 .AppendLine("else").WriteCodeBlock(arg, @else)
             );
+
+    private static CodeWriter WriteForeach<T>(this CodeWriter writer, T arg,
+        string entryName,
+        string collectionName,
+        Action<T, CodeWriter> writeBody) =>
+        writer.Append("foreach (var ").Append(entryName).Append(" in ").Append(collectionName).AppendLine(")")
+            .WriteCodeBlock(arg, writeBody);
 }

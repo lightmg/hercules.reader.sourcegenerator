@@ -1,24 +1,21 @@
 ﻿using System;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
+using Vostok.Hercules.Serializer.Generator.Models.Abstract;
 
-namespace Vostok.Hercules.Serializer.Generator.Models.Sources;
+namespace Vostok.Hercules.Serializer.Generator.Models.Vector;
 
-public sealed class TagMapVectorSource(string key, ReferencedType targetType, ReferencedType elementType)
+public sealed class TagMapVectorSource(string key, ReferencedType elementType)
     : ITagMapSource, IEquatable<TagMapVectorSource>
 {
     public string Key { get; } = key;
 
-    public ReferencedType TargetType { get; } = targetType;
-
     public ReferencedType ElementType { get; } = elementType;
-
-    ReferencedType ITagMapSource.Type => TargetType;
 
     public bool Equals(TagMapVectorSource? other)
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
-        return Key == other.Key && TargetType.Equals(other.TargetType) && ElementType.Equals(other.ElementType);
+        return Key == other.Key && ElementType.Equals(other.ElementType);
     }
 
     public override bool Equals(object? obj) =>
@@ -29,7 +26,6 @@ public sealed class TagMapVectorSource(string key, ReferencedType targetType, Re
         unchecked
         {
             var hashCode = Key.GetHashCode();
-            hashCode = (hashCode * 397) ^ TargetType.GetHashCode();
             hashCode = (hashCode * 397) ^ ElementType.GetHashCode();
             return hashCode;
         }

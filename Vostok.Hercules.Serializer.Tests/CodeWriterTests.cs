@@ -15,7 +15,6 @@ using Vostok.Hercules.Serializer.Generator.Core.Writer;
 using Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
 using Xunit;
 using Xunit.Abstractions;
-using TypeKind = Vostok.Hercules.Serializer.Generator.Core.Primitives.TypeKind;
 
 namespace Vostok.Hercules.Serializer.Tests;
 

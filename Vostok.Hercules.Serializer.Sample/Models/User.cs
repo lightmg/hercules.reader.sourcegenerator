@@ -27,11 +27,15 @@ public class User : IEntity
 
     [HerculesTag("city")] public string? City { get; set; }
 
-    [HerculesTag("categories")] public ICollection<Category> FavoriteCategories { get; set; } = new List<Category>();
+    [HerculesTag("categories")] 
+    public ICollection<Category> FavoriteCategories { get; set; } = new List<Category>();
 
     [HerculesTag("invitedBy")] public User? InvitedBy { get; set; }
 
     [HerculesTag("emails")]
-    [HerculesConverter(typeof(InstanceConverters), nameof(InstanceConverters.LongToString))]
     public ICollection<string> Emails { get; set; } = new List<string>();
+
+    [HerculesTag("emails")]
+    [HerculesConverter(typeof(InstanceConverters), nameof(InstanceConverters.ExtractDomain))]
+    public HashSet<string> EmailDomains { get; set; } = new();
 }

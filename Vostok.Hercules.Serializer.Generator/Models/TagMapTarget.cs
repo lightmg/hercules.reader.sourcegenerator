@@ -4,13 +4,16 @@ using Vostok.Hercules.Serializer.Generator.Services;
 
 namespace Vostok.Hercules.Serializer.Generator.Models;
 
-public readonly struct TagMapTarget
+public class TagMapTarget
 {
     public readonly ISymbol Symbol;
     public readonly ITypeSymbol Type;
 
-    private TagMapTarget(ISymbol symbol)
+    public TagMapTarget(ISymbol symbol)
     {
+        if (symbol is not (IFieldSymbol or IPropertySymbol))
+            throw new ArgumentException($"Symbol '{symbol}' is not a field or property.", nameof(symbol));
+
         Symbol = symbol;
         Type = Get(static x => x.Type, static x => x.Type);
     }
@@ -30,17 +33,6 @@ public readonly struct TagMapTarget
             IFieldSymbol field => getField(field),
             _ => throw InvalidSymbolException(Symbol)
         };
-
-    public static TagMapTarget FromProperty(IPropertySymbol symbol) =>
-        new(symbol);
-
-    public static TagMapTarget FromField(IFieldSymbol symbol) =>
-        new(symbol);
-
-    public static TagMapTarget Create(ISymbol symbol) =>
-        symbol is IPropertySymbol or IFieldSymbol
-            ? new(symbol)
-            : throw InvalidSymbolException(symbol);
 
     private static Exception InvalidSymbolException(ISymbol symbol) =>
         new InvalidOperationException($"The symbol {symbol} is not a property or field");

@@ -74,14 +74,16 @@ public static class CodeWriterExtensions
         return writer;
     }
 
-    public static CodeWriter When(this CodeWriter writer, Func<bool> condition, Action<CodeWriter> transform) =>
-        writer.When(condition(), transform);
-
     public static CodeWriter When<T>(this CodeWriter writer, T arg, Func<T, bool> condition,
-        Action<T, CodeWriter> transform)
+        Action<T, CodeWriter> then,
+        Action<T, CodeWriter>? @else = null
+        )
     {
         if (condition(arg))
-            transform(arg, writer);
+            then(arg, writer);
+        else 
+            @else?.Invoke(arg, writer);
+
         return writer;
     }
 }
