@@ -6,7 +6,7 @@ namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
 
 public class PropertyBuilder : ITypeMemberBuilder
 {
-    public PropertyBuilder(string name, ReferencedType type)
+    public PropertyBuilder(string name, TypeDescriptor type)
     {
         Name = name;
         Type = type;
@@ -14,7 +14,7 @@ public class PropertyBuilder : ITypeMemberBuilder
 
     public string Name { get; }
 
-    public ReferencedType Type { get; }
+    public TypeDescriptor Type { get; }
 
     public ParameterKind Kind { get; set; } = ParameterKind.Property;
 
@@ -22,9 +22,9 @@ public class PropertyBuilder : ITypeMemberBuilder
 
     public bool ReadOnly { get; set; } = false;
 
-    public static PropertyBuilder ReadOnlyField(string name, ReferencedType type,
+    public static PropertyBuilder ReadOnlyField(string name, TypeDescriptor typeDescriptor,
         Accessibility accessibility = Accessibility.Private) =>
-        new PropertyBuilder(name, type)
+        new PropertyBuilder(name, typeDescriptor)
         {
             Accessibility = accessibility,
             Kind = ParameterKind.Field,

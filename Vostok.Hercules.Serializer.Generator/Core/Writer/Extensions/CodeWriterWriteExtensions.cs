@@ -30,7 +30,7 @@ public static class CodeWriterWriteExtensions
             .When(method.IsStatic, static w => w.Append("static "))
             .When(method.IsOverride, static w => w.Append("override "))
             .When(method.IsNew, static w => w.Append("new "))
-            .AppendType(method.ReturnType ?? ReferencedType.Void).Append(" ")
+            .AppendType(method.ReturnType ?? TypeDescriptor.Void).Append(" ")
             .Append(method.Name)
             .WriteGenericArgs(method.Generics)
             .WriteParameters(method.Parameters)
@@ -127,7 +127,7 @@ public static class CodeWriterWriteExtensions
             append: static w => w.Append(">")
         );
 
-    public static CodeWriter WriteBaseTypes(this CodeWriter writer, IEnumerable<ReferencedType> baseTypes) =>
+    public static CodeWriter WriteBaseTypes(this CodeWriter writer, IEnumerable<TypeDescriptor> baseTypes) =>
         writer.WriteJoin(baseTypes, ", ",
             writeEntry: static (entry, w) => w.Append(entry.FullName),
             prepend: static w => w.Append(": ")

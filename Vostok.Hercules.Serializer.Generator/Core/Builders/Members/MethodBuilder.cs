@@ -16,7 +16,7 @@ public class MethodBuilder : IMethodBodyBuilder, ITypeMemberBuilder
 
     public string Name { get; }
 
-    public ReferencedType? ReturnType { get; set; } = null;
+    public TypeDescriptor? ReturnType { get; set; } = null;
 
     public IList<GenericTypeBuilder> Generics { get; set; } = [];
 

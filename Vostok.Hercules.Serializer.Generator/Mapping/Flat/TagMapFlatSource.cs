@@ -4,11 +4,11 @@ using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 
 namespace Vostok.Hercules.Serializer.Generator.Mapping.Flat;
 
-public sealed class TagMapFlatSource(string key, ReferencedType type) : ITagMapSource, IEquatable<TagMapFlatSource>
+public sealed class TagMapFlatSource(string key, TypeDescriptor type) : ITagMapSource, IEquatable<TagMapFlatSource>
 {
     public string Key { get; } = key;
 
-    public ReferencedType Type { get; } = type;
+    public TypeDescriptor Type { get; } = type;
 
     public bool Equals(TagMapFlatSource? other) =>
         other is not null &&

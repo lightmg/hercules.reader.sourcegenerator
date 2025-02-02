@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
+using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 using Vostok.Hercules.Serializer.Generator.Mapping.Flat;
 using Vostok.Hercules.Serializer.Generator.Services;
 
@@ -17,8 +18,8 @@ internal class VectorMapProvider : BaseMapProvider
     {
         var sourceType = InferSourceType(converter, elementType);
         var source = TypeUtilities.IsNullable(sourceType, out var underlyingType)
-            ? new TagMapVectorSource(tagKey, ReferencedType.From(underlyingType))
-            : new TagMapVectorSource(tagKey, ReferencedType.From(sourceType));
+            ? new TagMapVectorSource(tagKey, TypeDescriptor.From(underlyingType))
+            : new TagMapVectorSource(tagKey, TypeDescriptor.From(sourceType));
 
         var vectorTarget = new TagMapVectorTarget(target, elementType, vectorType);
         return new VectorTagMap(source, vectorTarget, converter);

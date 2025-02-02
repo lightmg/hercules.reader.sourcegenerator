@@ -4,12 +4,12 @@ using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 
 namespace Vostok.Hercules.Serializer.Generator.Mapping.Vector;
 
-public sealed class TagMapVectorSource(string key, ReferencedType elementType)
+public sealed class TagMapVectorSource(string key, TypeDescriptor elementType)
     : ITagMapSource, IEquatable<TagMapVectorSource>
 {
     public string Key { get; } = key;
 
-    public ReferencedType ElementType { get; } = elementType;
+    public TypeDescriptor ElementType { get; } = elementType;
 
     public bool Equals(TagMapVectorSource? other)
     {

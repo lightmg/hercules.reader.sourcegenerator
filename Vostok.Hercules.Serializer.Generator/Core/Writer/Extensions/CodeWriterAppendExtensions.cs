@@ -8,7 +8,10 @@ using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 namespace Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
 
 public static class CodeWriterAppendExtensions
-{
+{ 
+    public static CodeWriter AppendForeach(this CodeWriter writer, string entryName, string collectionName) =>
+        writer.Append("foreach (var ").Append(entryName).Append(" in ").Append(collectionName).AppendLine(")");
+
     public static CodeWriter AppendGeneric(this CodeWriter writer, GenericTypeBuilder builder)
     {
         var variance = builder.Variance switch
@@ -39,8 +42,8 @@ public static class CodeWriterAppendExtensions
             .Append(attribute)
             .When(attribute, a => !a.EndsWith("]"), static (_, w) => w.Append("]"));
 
-    public static CodeWriter AppendType(this CodeWriter writer, ReferencedType type) =>
-        writer.Append(type.FullName);
+    public static CodeWriter AppendType(this CodeWriter writer, TypeDescriptor typeDescriptor) =>
+        writer.Append(typeDescriptor.FullName);
 
     public static CodeWriter AppendNamespace(this CodeWriter writer, string ns) =>
         writer

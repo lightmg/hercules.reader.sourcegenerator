@@ -7,12 +7,12 @@ namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
 
 public class ClassBuilder : StatefulTypeBuilder, IInitializabeTypeBuilder
 {
-    public ClassBuilder(string ns, string name, ReferencedType? baseType = null) : base(ns, name)
+    public ClassBuilder(string ns, string name, TypeDescriptor? baseType = null) : base(ns, name)
     {
         BaseType = baseType;
     }
 
-    public ReferencedType? BaseType { get; }
+    public TypeDescriptor? BaseType { get; }
 
     public IList<ConstructorBuilder> Constructors { get; } = [];
 }

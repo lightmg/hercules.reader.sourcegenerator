@@ -171,16 +171,16 @@ public static class TypeUtilities
             SpecialType.System_Single
         || symbol.ToString() == "System.Guid";
 
-    public static bool IsHerculesPrimitive(ReferencedType type) =>
-        type.Is<byte>() ||
-        type.Is<bool>() ||
-        type.Is<short>() ||
-        type.Is<int>() ||
-        type.Is<long>() ||
-        type.Is<double>() ||
-        type.Is<string>() ||
-        type.Is<float>() ||
-        type.Is<Guid>();
+    public static bool IsHerculesPrimitive(TypeDescriptor typeDescriptor) =>
+        typeDescriptor.Is<byte>() ||
+        typeDescriptor.Is<bool>() ||
+        typeDescriptor.Is<short>() ||
+        typeDescriptor.Is<int>() ||
+        typeDescriptor.Is<long>() ||
+        typeDescriptor.Is<double>() ||
+        typeDescriptor.Is<string>() ||
+        typeDescriptor.Is<float>() ||
+        typeDescriptor.Is<Guid>();
 
     public static IEnumerable<KeyValuePair<string, object>> GetEnumKeysWithValues<TEnum>() where TEnum : struct, Enum
     {
@@ -192,6 +192,6 @@ public static class TypeUtilities
             );
     }
 
-    private static bool Is<T>(this ReferencedType type) =>
-        type.FullName == typeof(T).FullName;
+    private static bool Is<T>(this TypeDescriptor typeDescriptor) =>
+        typeDescriptor.FullName == typeof(T).FullName;
 }

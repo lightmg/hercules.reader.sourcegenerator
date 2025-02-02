@@ -10,7 +10,7 @@ public class GenericTypeBuilder(string name)
 {
     public string Name { get; } = name;
 
-    public IList<ReferencedType> Constraints { get; set; } = [];
+    public IList<TypeDescriptor> Constraints { get; set; } = [];
 
     public bool HasNewConstraint { get; set; }
 

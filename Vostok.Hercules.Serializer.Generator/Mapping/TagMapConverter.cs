@@ -15,9 +15,13 @@ public readonly record struct TagMapConverter
         Method = method;
     }
 
-    public ReferencedType InType => ReferencedType.From(Method.Parameters[0].Type);
+    public TypeDescriptor InType => TypeDescriptor.From(InTypeSymbol);
 
-    public ReferencedType OutType  => ReferencedType.From(Method.ReturnType);
+    public TypeDescriptor OutType  => TypeDescriptor.From(OutTypeSymbol);
+
+    public ITypeSymbol InTypeSymbol => Method.Parameters[0].Type;
+
+    public ITypeSymbol OutTypeSymbol  => Method.ReturnType;
 
     public void Deconstruct(out IMethodSymbol? converterMethod)
     {

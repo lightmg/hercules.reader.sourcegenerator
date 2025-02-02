@@ -15,7 +15,7 @@ public class EnumBuilder : TypeBuilder
 
     public bool IsFlags { get; set; } = false;
 
-    public ReferencedType BaseType { get; set; } = typeof(int);
+    public TypeDescriptor BaseType { get; set; } = typeof(int);
 
     public IDictionary<string, object> Values { get; } = new Dictionary<string, object>();
 

@@ -1,4 +1,4 @@
-﻿using Vostok.Hercules.Serializer.Generator.Mapping.Flat;
+﻿using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 
 namespace Vostok.Hercules.Serializer.Generator.Mapping.Container;
 

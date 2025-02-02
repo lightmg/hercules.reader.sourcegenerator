@@ -19,7 +19,7 @@ public class HerculesSerializationSourceGenerator : IIncrementalGenerator
         initCtx.RegisterPostInitializationOutput(ctx => { ctx.AddTypeSources(ExposedApi.All); });
 
         var iHerculesTagsBuilderProvider = initCtx.CompilationProvider
-            .Select((c, _) => c.GetTypeByMetadataName(HerculesConverterEmitter.TagsBuilderInterfaceType));
+            .Select((c, _) => c.GetTypeByMetadataName(TypeNames.HerculesClientAbstractions.ITagsBuilder));
 
         initCtx.RegisterSourceOutput(iHerculesTagsBuilderProvider,
             (ctx, interfaceType) =>

@@ -22,15 +22,7 @@ namespace Vostok.Hercules.Serializer.Generator.Services;
 
 public static class HerculesConverterEmitter
 {
-    private const string Namespace = "Vostok.Hercules.Client.Abstractions.Events";
-    private const string DummyBuilderType = $"{Namespace}.DummyHerculesTagsBuilder";
-    public const string TagsBuilderInterfaceType = $"{Namespace}.IHerculesTagsBuilder";
-
-    public static string EventBuilderInterfaceType(string type) =>
-        $"{Namespace}.IHerculesEventBuilder<{type}>";
-
-    public static string IReadOnlyListType(string type) =>
-        typeof(IReadOnlyList<>).Namespace + $".IReadOnlyList<{type}>";
+    private const string ResultPropertyName = "Current";
 
     public static ClassBuilder CreateType(EventMapping eventMap)
     {
@@ -38,18 +30,18 @@ public static class HerculesConverterEmitter
         var builder = new ClassBuilder(
             ns: eventMap.Type.ContainingNamespace.ToString(),
             name: eventMap.Type.Name + "Builder",
-            baseType: DummyBuilderType
+            baseType: TypeNames.HerculesClientAbstractions.DummyBuilderType
         )
         {
             Accessibility = Accessibility.Internal,
-            Interfaces = { EventBuilderInterfaceType(targetTypeFullName) },
-            Properties = { PropertyBuilder.ReadOnlyField("Current", targetTypeFullName, Accessibility.Public) }
+            Interfaces = { TypeNames.HerculesClientAbstractions.EventBuilderInterfaceType(targetTypeFullName) },
+            Properties = { PropertyBuilder.ReadOnlyField(ResultPropertyName, targetTypeFullName, Accessibility.Public) }
         };
 
         AddDependencies(builder, eventMap.Entries.OfType<ContainerTagMap>()
             .Select(c => (
                 GetBuilderProviderFieldName(c),
-                ReferencedType.From(ExposedApi.IHerculesEventBuilderProvider.GetFullName(c.Target.Type.ToString()))
+                TypeDescriptor.From(ExposedApi.IHerculesEventBuilderProvider.GetFullName(c.Target.Type.ToString()))
             ))
         );
 
@@ -58,18 +50,18 @@ public static class HerculesConverterEmitter
             .Where(c => c?.Method is { IsStatic: false })
             .Select(c => (
                 GetConverterFieldName(c)!,
-                ReferencedType.From(c!.Value.Method.ContainingType)
+                TypeDescriptor.From(c!.Value.Method.ContainingType)
             ))
         );
 
         builder.AddConstructor(ctor => ctor.AppendEmitBody(w => w
-            .AppendPropertyAssignment("Current", $"new {targetTypeFullName}()")
-        ));
-        builder.AddPropertiesCtorInit(p => p.Name != "Current");
+                .AppendPropertyAssignment(ResultPropertyName, $"new {targetTypeFullName}()")
+            ))
+            .AddPropertiesCtorInit(p => p.Name != ResultPropertyName);
 
         builder.Methods.AddRange(CreateFlatMapMethods(eventMap));
         builder.Methods.AddRange(CreateVectorMapMethods(eventMap));
-        builder.Methods.Add(CreateContainerMapMethods(eventMap));
+        builder.Methods.Add(CreateContainerMapMethod(eventMap));
         builder.Methods.Add(CreateBuildEventMethod(eventMap));
         builder.Methods.Add(CreateSetTimestampMethod(eventMap));
 
@@ -78,7 +70,7 @@ public static class HerculesConverterEmitter
 
     private static void AddDependencies(
         ClassBuilder builder,
-        IEnumerable<(string fieldName, ReferencedType type)> services
+        IEnumerable<(string fieldName, TypeDescriptor type)> services
     )
     {
         builder.Properties.AddRange(services
@@ -107,10 +99,10 @@ public static class HerculesConverterEmitter
                     Accessibility = Accessibility.Public,
                     Parameters =
                     {
-                        new("key", ReferencedType.From<string>()),
-                        new("value", ReferencedType.From(group.KeyType.ToString()))
+                        new("key", TypeDescriptor.From<string>()),
+                        new("value", group.KeyType)
                     },
-                    ReturnType = TagsBuilderInterfaceType,
+                    ReturnType = TypeNames.HerculesClientAbstractions.ITagsBuilder,
                 }
                 .PrependEmitBody(w => WriteMapMethod(w, group.SameKeyEntries, static (e, w) => w
                     .WriteJoin(e, null, static (e, ew) => WriteFlatAssignment(ew, e))
@@ -129,25 +121,25 @@ public static class HerculesConverterEmitter
                     Accessibility = Accessibility.Public,
                     Parameters =
                     {
-                        new("key", ReferencedType.From<string>()),
-                        new("values", IReadOnlyListType(group.ElementType.FullName))
+                        new("key", TypeDescriptor.From<string>()),
+                        new("values", TypeNames.Collections.IReadOnlyList(group.ElementType.FullName))
                     },
-                    ReturnType = TagsBuilderInterfaceType,
+                    ReturnType = TypeNames.HerculesClientAbstractions.ITagsBuilder,
                 }
                 .PrependEmitBody(w => WriteMapMethod(w, group.SameKeyEntries, WriteVectorAssignments))
             );
 
-    private static MethodBuilder CreateContainerMapMethods(EventMapping eventMap) =>
+    private static MethodBuilder CreateContainerMapMethod(EventMapping eventMap) =>
         new MethodBuilder("AddContainer")
             {
                 IsNew = true,
                 Accessibility = Accessibility.Public,
                 Parameters =
                 {
-                    new("key", ReferencedType.From<string>()),
-                    new("valueBuilder", $"System.Action<{TagsBuilderInterfaceType}>")
+                    new("key", TypeDescriptor.From<string>()),
+                    new("valueBuilder", TypeNames.Action(TypeNames.HerculesClientAbstractions.ITagsBuilder))
                 },
-                ReturnType = TagsBuilderInterfaceType
+                ReturnType = TypeNames.HerculesClientAbstractions.ITagsBuilder
             }
             .PrependEmitBody(writer => WriteMapMethod(writer,
                 eventMap.Entries.OfType<ContainerTagMap>().GroupBy(x => x.Source.Key),
@@ -164,15 +156,15 @@ public static class HerculesConverterEmitter
                     writeCondition: (tag, w) => w.AppendTargetReference(tag.Target).Append(" == null"),
                     writeBody: (tag, w) => w.WriteThrowHerculesValidationException(tag.Target.Name)
                 )
-                .AppendLine("return this.Current;")
+                .AppendLine($"return this.{ResultPropertyName};")
         };
 
     private static MethodBuilder CreateSetTimestampMethod(EventMapping mapping) =>
         new MethodBuilder("SetTimestamp")
         {
             Accessibility = Accessibility.Public,
-            ReturnType = EventBuilderInterfaceType(mapping.Type.ToString()),
-            Parameters = { new ParameterBuilder("value", ReferencedType.From<DateTimeOffset>()) },
+            ReturnType = TypeNames.HerculesClientAbstractions.EventBuilderInterfaceType(mapping.Type.ToString()),
+            Parameters = { new ParameterBuilder("value", TypeDescriptor.From<DateTimeOffset>()) },
             EmitBody = writer => writer
                 .WriteJoin(
                     mapping.Entries.OfType<TimestampTagMap>(),
@@ -213,7 +205,7 @@ public static class HerculesConverterEmitter
     }
 
     private static CodeWriter AppendTargetReference(this CodeWriter writer, TagMapTarget target) =>
-        writer.Append("this.Current.").Append(target.Name);
+        writer.Append("this.").Append(ResultPropertyName).Append(".").Append(target.Name);
 
     private static void WriteContainerAssignments(IGrouping<string, ContainerTagMap> containers, CodeWriter writer)
     {
@@ -229,7 +221,7 @@ public static class HerculesConverterEmitter
                     then: static (containers, w) => WriteBuilderInit(containers.Single(), w),
                     @else: static (containers, w) => w
                         .Append("new ").Append(HerculesProxyTagsBuilderEmitter.FullName)
-                        .AppendLine($"(new {TagsBuilderInterfaceType}[] {{")
+                        .AppendLine($"(new {TypeNames.HerculesClientAbstractions.ITagsBuilder}[] {{")
                         .WriteBlock(default, containers, static (containers, w) => w
                             .WriteJoin(containers, ",\n", static (map, w) => w.Append(GetBuilderVarName(map)))
                         )
@@ -258,9 +250,9 @@ public static class HerculesConverterEmitter
                 .WriteVariable(map,
                     writeName: static (map, w) => w.Append(GetVectorName(map)),
                     writeValue: static (map, w) => w
-                        .When(map, IsArrayStyleInit, static (map, w) => w.Append(ArrayType(map)))
-                        .When(map, IsListStyleInit, static (map, w) => w.Append(ListType(map)))
-                        .When(map, IsHashSetStyleInit, static (map, w) => w.Append(HashSetType(map)))
+                        .When(map, IsArrayStyleInit, static (map, w) => w.Append(ArrayInit(map)))
+                        .When(map, IsListStyleInit, static (map, w) => w.Append(ListInit(map)))
+                        .When(map, IsHashSetStyleInit, static (map, w) => w.Append(HashSetInit(map)))
                 ))
             .When(vectors.Any(IsArrayStyleInit), w => w.WriteVariable("index", "0"))
             .WriteForeach(vectors, "value", "values", static (vectors, w) => w
@@ -293,7 +285,7 @@ public static class HerculesConverterEmitter
                 VectorType.IReadOnlyCollection or
                 VectorType.IReadOnlyList;
 
-        static string ArrayType(VectorTagMap map) =>
+        static string ArrayInit(VectorTagMap map) =>
             $"new {map.Target.ElementType}[values.Count]";
 
         static bool IsListStyleInit(VectorTagMap map) =>
@@ -302,8 +294,8 @@ public static class HerculesConverterEmitter
                 VectorType.IList or
                 VectorType.List;
 
-        static string ListType(VectorTagMap map) =>
-            $"new System.Collections.Generic.List<{map.Target.ElementType}>(values.Count)";
+        static string ListInit(VectorTagMap map) =>
+            $"new {TypeNames.Collections.List(map.Target.ElementType.ToString())}(values.Count)";
 
         static bool IsHashSetStyleInit(VectorTagMap map) =>
             map.Target.VectorType is
@@ -311,15 +303,12 @@ public static class HerculesConverterEmitter
                 VectorType.IReadOnlySet or
                 VectorType.HashSet;
 
-        static string HashSetType(VectorTagMap map) =>
-            $"new System.Collections.Generic.HashSet<{map.Target.ElementType}>()";
+        static string HashSetInit(VectorTagMap map) =>
+            $"new {TypeNames.Collections.HashSet(map.Target.ElementType.ToString())}()";
 
         static string GetVectorName(VectorTagMap map) =>
             TextCaseConverter.ToLowerCamelCase(map.Target.Name);
     }
-
-    private static CodeWriter WriteCast(this CodeWriter writer, ReferencedType to) =>
-        writer.Append("(").AppendType(to).Append(")");
 
     private static CodeWriter WriteValueWithConversion(this CodeWriter writer, TagMapConverter? converter) =>
         writer.WhenNotNull(converter,

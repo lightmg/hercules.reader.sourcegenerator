@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Mapping;
 using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 using Vostok.Hercules.Serializer.Generator.Mapping.Container;

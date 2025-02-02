@@ -6,37 +6,37 @@ using Vostok.Hercules.Serializer.Generator.Core.Builders.Types.Abstract;
 
 namespace Vostok.Hercules.Serializer.Generator.Core.Primitives;
 
-public readonly struct ReferencedType(string fullName) : IEquatable<ReferencedType>
+public readonly struct TypeDescriptor(string fullName) : IEquatable<TypeDescriptor>
 {
     public string FullName { get; } = fullName;
 
     public override string ToString() =>
         FullName;
 
-    public bool Equals(ReferencedType other) =>
+    public bool Equals(TypeDescriptor other) =>
         string.Equals(FullName, other.FullName, StringComparison.Ordinal);
 
     public override bool Equals(object? obj) =>
-        obj is ReferencedType other && Equals(other);
+        obj is TypeDescriptor other && Equals(other);
 
     public override int GetHashCode() =>
         StringComparer.Ordinal.GetHashCode(FullName);
 
-    public static bool operator ==(ReferencedType left, ReferencedType right) =>
+    public static bool operator ==(TypeDescriptor left, TypeDescriptor right) =>
         left.Equals(right);
 
-    public static bool operator !=(ReferencedType left, ReferencedType right) =>
+    public static bool operator !=(TypeDescriptor left, TypeDescriptor right) =>
         !left.Equals(right);
 
-    public static ReferencedType Void => new("void");
+    public static TypeDescriptor Void => new("void");
 
-    public static ReferencedType From<T>() =>
+    public static TypeDescriptor From<T>() =>
         From(typeof(T));
 
-    public static ReferencedType From(Type type) =>
+    public static TypeDescriptor From(Type type) =>
         From(type.FullName!);
 
-    public static ReferencedType From(ITypeSymbol type) =>
+    public static TypeDescriptor From(ITypeSymbol type) =>
         type.SpecialType switch
         {
             SpecialType.System_Object => typeof(object),
@@ -58,21 +58,21 @@ public readonly struct ReferencedType(string fullName) : IEquatable<ReferencedTy
             _ => From(type.ToString())
         };
 
-    public static ReferencedType From(ITypeBuilder typeBuilder) =>
+    public static TypeDescriptor From(ITypeBuilder typeBuilder) =>
         From(typeBuilder.FullName);
 
-    public static ReferencedType From(string ns, string name) =>
+    public static TypeDescriptor From(string ns, string name) =>
         From($"{ns}.{name}");
 
-    public static ReferencedType From(string fullyQualifiedName) =>
+    public static TypeDescriptor From(string fullyQualifiedName) =>
         new(fullyQualifiedName);
 
-    public static ReferencedType From(GenericTypeBuilder genericType) =>
+    public static TypeDescriptor From(GenericTypeBuilder genericType) =>
         new(genericType.Name);
 
-    public static implicit operator ReferencedType(Type type) => From(type);
+    public static implicit operator TypeDescriptor(Type type) => From(type);
 
-    public static implicit operator ReferencedType(TypeBuilder typeBuilder) => From(typeBuilder);
+    public static implicit operator TypeDescriptor(TypeBuilder typeBuilder) => From(typeBuilder);
 
-    public static implicit operator ReferencedType(string fullName) => From(fullName);
+    public static implicit operator TypeDescriptor(string fullName) => From(fullName);
 }

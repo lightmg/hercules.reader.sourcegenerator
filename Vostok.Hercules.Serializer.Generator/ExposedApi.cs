@@ -101,7 +101,7 @@ internal static class ExposedApi
             {
                 new MethodBuilder("Get")
                 {
-                    ReturnType = HerculesConverterEmitter.EventBuilderInterfaceType("THerculesEvent")
+                    ReturnType = TypeNames.HerculesClientAbstractions.EventBuilderInterfaceType("THerculesEvent")
                 }
             }
         };

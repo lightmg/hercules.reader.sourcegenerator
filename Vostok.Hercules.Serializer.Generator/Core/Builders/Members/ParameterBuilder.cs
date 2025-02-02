@@ -4,7 +4,7 @@ namespace Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
 
 public class ParameterBuilder
 {
-    public ParameterBuilder(string name, ReferencedType type)
+    public ParameterBuilder(string name, TypeDescriptor type)
     {
         Name = name;
         Type = type;
@@ -12,7 +12,7 @@ public class ParameterBuilder
 
     public string Name { get; }
 
-    public ReferencedType Type { get; }
+    public TypeDescriptor Type { get; }
 
     public string? DefaultValue { get; set; }
 }

@@ -1,11 +1,9 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.CodeAnalysis;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extensions;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
 using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
 using Vostok.Hercules.Serializer.Generator.Core.Primitives;
-using Vostok.Hercules.Serializer.Generator.Core.Writer;
 using Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
@@ -22,12 +20,12 @@ public static class HerculesProxyTagsBuilderEmitter
     {
         var builder = new ClassBuilder(ExposedApi.Namespace, TypeName)
             {
-                Interfaces = { ReferencedType.From(tagsBuilderInterface) },
+                Interfaces = { TypeDescriptor.From(tagsBuilderInterface) },
                 Accessibility = Accessibility.Internal,
                 Generics = tagsBuilderInterface.TypeParameters.Select(ConvertGeneric).ToList(),
                 Properties =
                 {
-                    new("builders", HerculesConverterEmitter.TagsBuilderInterfaceType + "[]")
+                    new("builders", TypeNames.HerculesClientAbstractions.ITagsBuilder + "[]")
                     {
                         Kind = ParameterKind.Field,
                         ReadOnly = true,
@@ -44,12 +42,12 @@ public static class HerculesProxyTagsBuilderEmitter
                 IsStatic = false,
                 IsOverride = false,
                 Accessibility = Accessibility.Public,
-                ReturnType = ReferencedType.From(method.ReturnType),
+                ReturnType = TypeDescriptor.From(method.ReturnType),
                 Generics = method.TypeParameters
                     .Select(ConvertGeneric)
                     .ToList(),
                 Parameters = method.Parameters
-                    .Select(p => new ParameterBuilder(p.Name, ReferencedType.From(p.Type)))
+                    .Select(p => new ParameterBuilder(p.Name, TypeDescriptor.From(p.Type)))
                     .ToList(),
                 EmitBody = writer => writer
                     .WriteForeach(method, "builder", "builders", static (method, w) => w
@@ -70,6 +68,6 @@ public static class HerculesProxyTagsBuilderEmitter
         {
             HasNewConstraint = t.HasConstructorConstraint,
             Variance = t.Variance,
-            Constraints = t.ConstraintTypes.Select(ReferencedType.From).ToList()
+            Constraints = t.ConstraintTypes.Select(TypeDescriptor.From).ToList()
         };
 }

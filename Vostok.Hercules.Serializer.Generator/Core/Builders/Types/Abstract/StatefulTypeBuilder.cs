@@ -10,7 +10,7 @@ public abstract class StatefulTypeBuilder : TypeBuilder
     {
     }
 
-    public IList<ReferencedType> Interfaces { get; } = [];
+    public IList<TypeDescriptor> Interfaces { get; } = [];
 
     public IList<GenericTypeBuilder> Generics { get; set; } = [];
 

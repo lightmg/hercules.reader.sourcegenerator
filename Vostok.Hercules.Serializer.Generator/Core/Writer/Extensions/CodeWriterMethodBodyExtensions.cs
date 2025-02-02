@@ -28,7 +28,7 @@ public static class CodeWriterMethodBodyExtensions
         string collectionName,
         Action<T, CodeWriter> writeBody) =>
         writer
-            .Append("foreach (var ").Append(entryName).Append(" in ").Append(collectionName).AppendLine(")")
+            .AppendForeach(entryName, collectionName)
             .WriteCodeBlock(arg, writeBody);
 
     public static CodeWriter WriteVariable<T>(this CodeWriter writer, T arg,
