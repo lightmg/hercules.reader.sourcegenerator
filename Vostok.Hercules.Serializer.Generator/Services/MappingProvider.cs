@@ -7,6 +7,7 @@ using Vostok.Hercules.Serializer.Generator.Mapping.Container;
 using Vostok.Hercules.Serializer.Generator.Mapping.Flat;
 using Vostok.Hercules.Serializer.Generator.Mapping.Timestamp;
 using Vostok.Hercules.Serializer.Generator.Mapping.Vector;
+using Vostok.Hercules.Serializer.Generator.Mapping.VectorOfContainers;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
@@ -72,7 +73,9 @@ internal static class MappingProvider
             return ContainerMapProvider.Create(target, tagKey);
 
         if (TypeUtilities.IsVector(target.Type, out var elementType, out var vectorType))
-            return VectorMapProvider.Create(target, tagKey, converter, elementType, vectorType);
+            return TypeUtilities.IsContainer(elementType)
+                ? VectorOfContainersMapProvider.Create(target, tagKey, elementType, vectorType)
+                : VectorMapProvider.Create(target, tagKey, converter, elementType, vectorType);
 
         return FlatMapProvider.Create(target, tagKey, converter);
     }

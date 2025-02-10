@@ -48,16 +48,4 @@ public static class CodeWriterMethodBodyExtensions
 
     public static CodeWriter WriteVariable(this CodeWriter writer, string name, string value) =>
         writer.Append("var ").Append(name).Append(" = ").Append(value).AppendLine(";");
-
-    private static CodeWriter Append<T>(this CodeWriter writer, T arg, Action<T, CodeWriter> write)
-    {
-        write(arg, writer);
-        return writer;
-    }
-
-    private static CodeWriter Append(this CodeWriter writer, Action<CodeWriter> write)
-    {
-        write(writer);
-        return writer;
-    }
 }

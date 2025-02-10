@@ -8,7 +8,19 @@ using Vostok.Hercules.Serializer.Generator.Core.Primitives;
 namespace Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
 
 public static class CodeWriterAppendExtensions
-{ 
+{
+    public static CodeWriter Append<T>(this CodeWriter writer, T arg, Action<T, CodeWriter>? write)
+    {
+        write?.Invoke(arg, writer);
+        return writer;
+    }
+
+    public static CodeWriter Append(this CodeWriter writer, Action<CodeWriter>? write)
+    {
+        write?.Invoke(writer);
+        return writer;
+    }
+
     public static CodeWriter AppendForeach(this CodeWriter writer, string entryName, string collectionName) =>
         writer.Append("foreach (var ").Append(entryName).Append(" in ").Append(collectionName).AppendLine(")");
 

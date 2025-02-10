@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Vostok.Hercules.Client.Abstractions.Events;
 using Vostok.Hercules.Serializer.Generator;
 using Vostok.Hercules.Serializer.Sample.Converters;
@@ -11,10 +12,19 @@ public static class Program
 {
     public static void Main(string[] args)
     {
+        using (File.OpenRead("")) ;
+
         var catBuilderProvider = new CategoryBuilderProvider();
         var userBuilderProvider = new UserBuilderProvider(catBuilderProvider);
         var userBuilder = userBuilderProvider.Get();
     }
+
+    private static void DoStuff()
+    {
+        using (GetDisposable()) ;
+    }
+
+    private static IDisposable GetDisposable() => null!;
 
     internal class CategoryBuilderProvider : IHerculesEventBuilderProvider<Category>
     {
@@ -40,8 +50,15 @@ public static class Program
         public IHerculesTagsBuilder AddVector(string key, IReadOnlyList<short> values) =>
             this;
 
+        public new IHerculesTagsBuilder AddVectorOfContainers(string key,
+            IReadOnlyList<Action<IHerculesTagsBuilder>> containers)
+        {
+            base.AddVectorOfContainers()
+        }
+
         public IHerculesTagsBuilder AddContainer(string key, Action<IHerculesTagsBuilder> valueBuilder)
         {
+            
             if (key == "category")
             {
                 var catbuilder = new CategoryBuilder(new());

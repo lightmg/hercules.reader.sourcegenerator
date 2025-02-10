@@ -17,6 +17,7 @@ using Vostok.Hercules.Serializer.Generator.Mapping.Container;
 using Vostok.Hercules.Serializer.Generator.Mapping.Flat;
 using Vostok.Hercules.Serializer.Generator.Mapping.Timestamp;
 using Vostok.Hercules.Serializer.Generator.Mapping.Vector;
+using Vostok.Hercules.Serializer.Generator.Mapping.VectorOfContainers;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
@@ -44,6 +45,12 @@ public static class HerculesConverterEmitter
                 TypeDescriptor.From(ExposedApi.IHerculesEventBuilderProvider.GetFullName(c.Target.Type.ToString()))
             ))
         );
+        AddDependencies(builder, eventMap.Entries.OfType<VectorOfContainersTagMap>()
+            .Select(c => (
+                GetBuilderProviderFieldName(c),
+                TypeDescriptor.From(ExposedApi.IHerculesEventBuilderProvider.GetFullName(c.Target.ElementType.ToString()))
+            ))
+        );
 
         AddDependencies(builder, eventMap.Entries.OfType<IConvertibleTagMap>()
             .Select(e => e.Converter)
@@ -62,6 +69,7 @@ public static class HerculesConverterEmitter
         builder.Methods.AddRange(CreateFlatMapMethods(eventMap));
         builder.Methods.AddRange(CreateVectorMapMethods(eventMap));
         builder.Methods.Add(CreateContainerMapMethod(eventMap));
+        builder.Methods.Add(CreateVectorOfContainersMapMethod(eventMap));
         builder.Methods.Add(CreateBuildEventMethod(eventMap));
         builder.Methods.Add(CreateSetTimestampMethod(eventMap));
 
@@ -146,6 +154,25 @@ public static class HerculesConverterEmitter
                 WriteContainerAssignments
             ));
 
+    private static MethodBuilder CreateVectorOfContainersMapMethod(EventMapping eventMap) =>
+        new MethodBuilder("AddVectorOfContainers")
+            {
+                IsNew = true,
+                Accessibility = Accessibility.Public,
+                Parameters =
+                {
+                    new("key", TypeDescriptor.From<string>()),
+                    new("valueBuilders", TypeNames.Collections.IReadOnlyList(
+                        TypeNames.Action(TypeNames.HerculesClientAbstractions.ITagsBuilder))
+                    )
+                },
+                ReturnType = TypeNames.HerculesClientAbstractions.ITagsBuilder
+            }
+            .PrependEmitBody(writer => WriteMapMethod(writer,
+                eventMap.Entries.OfType<VectorOfContainersTagMap>().GroupBy(x => x.Source.Key),
+                WriteVectorOfContainerAssignments
+            ));
+
     private static MethodBuilder CreateBuildEventMethod(EventMapping mapping) =>
         new MethodBuilder("BuildEvent")
         {
@@ -206,6 +233,101 @@ public static class HerculesConverterEmitter
 
     private static CodeWriter AppendTargetReference(this CodeWriter writer, TagMapTarget target) =>
         writer.Append("this.").Append(ResultPropertyName).Append(".").Append(target.Name);
+
+    private static void WriteVectorOfContainerAssignments(IGrouping<string, VectorOfContainersTagMap> containers,
+        CodeWriter writer)
+    {
+        writer
+            .WriteJoin(containers, null, static (map, w) => w
+                .WriteVariable(map,
+                    writeName: static (map, w) => w.Append(GetVectorName(map)),
+                    writeValue: static (map, w) => w
+                        .When(map, IsArrayStyleInit, static (map, w) => w.Append(ArrayInit(map)))
+                        .When(map, IsListStyleInit, static (map, w) => w.Append(ListInit(map)))
+                        .When(map, IsHashSetStyleInit, static (map, w) => w.Append(HashSetInit(map)))
+                ))
+            .When(containers.Any(IsArrayStyleInit), w => w.WriteVariable("index", "0"))
+            .WriteForeach(containers, "valueBuilder", "valueBuilders", static (containers, writer) =>
+            {
+                writer.WriteJoin(containers, null, static (container, w) => w
+                    .WriteVariable(container, GetBuilderVarName(container), WriteBuilderInit)
+                );
+
+                if (containers.Count() == 1)
+                    writer.AppendLine($"valueBuilder({GetBuilderVarName(containers.Single())});");
+                else
+                    writer.WriteVariable(containers, "builder", static (containers, w) => w.When(containers,
+                            condition: static containers => containers.Count() == 1,
+                            then: static (containers, w) => WriteBuilderInit(containers.Single(), w),
+                            @else: static (containers, w) => w
+                                .Append("new ").Append(HerculesProxyTagsBuilderEmitter.FullName)
+                                .AppendLine($"(new {TypeNames.HerculesClientAbstractions.ITagsBuilder}[] {{")
+                                .WriteBlock(default, containers, static (containers, w) => w
+                                    .WriteJoin(containers, ",\n", static (map, w) => w.Append(GetBuilderVarName(map)))
+                                )
+                                .AppendLine().Append("})")
+                        ))
+                        .AppendLine("valueBuilder(builder);");
+
+                writer.WriteJoin(containers, null, static (vector, w) => w
+                        .When(vector, IsArrayStyleInit,
+                            then: static (map, w) => w
+                                .Append(GetVectorName(map))
+                                .Append("[index] = ")
+                                .Append(GetBuilderVarName(map)).Append(".BuildEvent()")
+                                .AppendLine(";"),
+                            @else: static (vector, w) => w
+                                .Append(GetVectorName(vector))
+                                .Append(".Add(")
+                                .Append(GetBuilderVarName(vector)).Append(".BuildEvent()")
+                                .AppendLine(");")
+                        )
+                    )
+                    .When(containers.Any(IsArrayStyleInit), w => w.AppendLine("index++;"));
+            })
+            .WriteJoin(containers, null, static (map, w) => w
+                .WriteTagTargetAssignment(map, static (map, w) => w.Append(GetVectorName(map)))
+            );
+
+        return;
+
+        static void WriteBuilderInit(VectorOfContainersTagMap map, CodeWriter writer) =>
+            writer.Append("this.").Append(GetBuilderProviderFieldName(map)).Append(".Get()");
+
+        static string GetBuilderVarName(VectorOfContainersTagMap map) =>
+            TextCaseConverter.ToLowerCamelCase(map.Target.Name) + "Builder";
+
+        static bool IsArrayStyleInit(VectorOfContainersTagMap map) =>
+            map.Target.VectorType is
+                VectorType.Array or
+                VectorType.IEnumerable or
+                VectorType.IReadOnlyCollection or
+                VectorType.IReadOnlyList;
+
+        static string ArrayInit(VectorOfContainersTagMap map) =>
+            $"new {map.Target.ElementType}[valueBuilders.Count]";
+
+        static bool IsListStyleInit(VectorOfContainersTagMap map) =>
+            map.Target.VectorType is
+                VectorType.ICollection or
+                VectorType.IList or
+                VectorType.List;
+
+        static string ListInit(VectorOfContainersTagMap map) =>
+            $"new {TypeNames.Collections.List(map.Target.ElementType.ToString())}(valueBuilders.Count)";
+
+        static bool IsHashSetStyleInit(VectorOfContainersTagMap map) =>
+            map.Target.VectorType is
+                VectorType.ISet or
+                VectorType.IReadOnlySet or
+                VectorType.HashSet;
+
+        static string HashSetInit(VectorOfContainersTagMap map) =>
+            $"new {TypeNames.Collections.HashSet(map.Target.ElementType.ToString())}()";
+
+        static string GetVectorName(VectorOfContainersTagMap map) =>
+            TextCaseConverter.ToLowerCamelCase(map.Target.Name);
+    }
 
     private static void WriteContainerAssignments(IGrouping<string, ContainerTagMap> containers, CodeWriter writer)
     {

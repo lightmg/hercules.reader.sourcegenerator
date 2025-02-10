@@ -35,6 +35,18 @@ public readonly struct CodeWriter
         return this;
     }
 
+    public CodeWriter Append(CodeWriter writer)
+    {
+        if (writer.builder.Length == 0)
+            return this;
+
+        if (ShouldIndent())
+            AppendIndent();
+
+        builder.Append(writer.builder); 
+        return this;
+    }
+
     public CodeWriter Append(char symbol)
     {
         if (ShouldIndent())

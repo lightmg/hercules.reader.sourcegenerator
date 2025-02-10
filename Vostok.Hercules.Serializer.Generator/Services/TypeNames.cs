@@ -13,7 +13,7 @@ public static class TypeNames
         public const string Namespace = "System.Collections.Generic";
 
         public static string HashSet(string type) =>
-            "new System.Collections.Generic.HashSet<{type}>";
+            $"System.Collections.Generic.HashSet<{type}>";
 
         public static string List(string type) =>
             $"System.Collections.Generic.List<{type}>";
