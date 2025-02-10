@@ -34,3 +34,13 @@ but executable code (such as method bodies) is way more complicated topic,
 and it's really easier to emit it just via `Append(string)`
 
 This design is kinda chaotic, but it allows to not care about low level details while writing actual business-logic with a reasonable cost.
+
+
+## TODO
+
+- Add generated builder configuration (re-use builderProvider, nullability, implicit type conversions, etc)
+- Move API to own NuGet package
+- Approval tests (separated by generated code and diagnostic messages)
+- Refactor HerculesConverterEmitter to reuse same code concepts and get rid of magic strings (Expressions-like tree?)
+- More strict validations on attributes
+- Add API to deserialize containers not only from types marked with GenerateHerculesReaderAttribute
