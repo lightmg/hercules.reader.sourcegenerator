@@ -123,7 +123,7 @@ public static class HerculesConverterEmitter
                 ElementType: elementType,
                 SameKeyEntries: entries.GroupBy(y => y.Source.Key)
             ))
-            .Select(group => new MethodBuilder("AddValues")
+            .Select(group => new MethodBuilder("AddVector")
                 {
                     IsNew = true,
                     Accessibility = Accessibility.Public,
