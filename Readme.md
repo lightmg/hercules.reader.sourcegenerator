@@ -45,3 +45,4 @@ This design is kinda chaotic, but it allows to not care about low level details 
 - More strict validations on attributes
 - Add API to deserialize containers not only from types marked with GenerateHerculesReaderAttribute
 - Specify converter type via Attribute generic args (C# 11+)
+- Infer method containing type from nameof(...) syntax (if possible)
