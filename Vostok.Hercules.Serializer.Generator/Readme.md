@@ -44,3 +44,4 @@ This design is kinda chaotic, but it allows to not care about low level details 
 - Refactor HerculesConverterEmitter to reuse same code concepts and get rid of magic strings (Expressions-like tree?)
 - More strict validations on attributes
 - Add API to deserialize containers not only from types marked with GenerateHerculesReaderAttribute
+- Specify converter type via Attribute generic args (C# 11+)

@@ -15,11 +15,6 @@ namespace Vostok.Hercules.Serializer.Generator;
 [SuppressMessage("ReSharper", "InconsistentNaming")] // used implicitly via 'All' property
 internal static class ExposedApi
 {
-    /*
-     * Some future ideas:
-     *   - specify converter type via generic attribute
-     */
-
     public const string Namespace = "Vostok.Hercules.Serializer.Generator";
 
     public static readonly AttributeTypeBuilder GenerateHerculesReaderAttribute =
