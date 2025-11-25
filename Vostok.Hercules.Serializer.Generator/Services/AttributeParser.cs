@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 using Microsoft.CodeAnalysis;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
+using SourceGenerator.Core.Builders.Types;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 

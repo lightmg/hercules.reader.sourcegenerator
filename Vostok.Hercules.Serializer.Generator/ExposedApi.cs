@@ -3,10 +3,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extensions;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Types.Abstract;
+using SourceGenerator.Core.Builders.Declarations.Extensions;
+using SourceGenerator.Core.Builders.Members;
+using SourceGenerator.Core.Builders.Types;
+using SourceGenerator.Core.Builders.Types.Abstract;
+using SourceGenerator.Core.Helpers;
+using SourceGenerator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Services;
 
 namespace Vostok.Hercules.Serializer.Generator;
@@ -30,7 +32,7 @@ internal static class ExposedApi
                 Accessibility = Accessibility.Internal,
                 Usage = AttributeTargets.Property | AttributeTargets.Field
             }
-            .AddConstructor(ctor => ctor.Parameters.Add(new("converterType", typeof(Type))))
+            .AddConstructor(ctor => ctor.Parameters.Add(new((string)"converterType", (TypeDescriptor)typeof(Type))))
             .AddConstructor(ctor =>
             {
                 ctor.Parameters.Add(new("convertMethodContainingType", typeof(Type)));
@@ -80,13 +82,6 @@ internal static class ExposedApi
             ))
             .AddPropertiesCtorInit(p => p.Name is "PropertyName");
 
-    public static readonly ClassBuilder EmbeddedAttribute =
-        new AttributeTypeBuilder("Microsoft.CodeAnalysis", "EmbeddedAttribute")
-        {
-            Accessibility = Accessibility.Internal,
-            Usage = AttributeTargets.Class
-        };
-
     public static readonly InterfaceBuilder IHerculesEventBuilderProvider =
         new InterfaceBuilder(Namespace, nameof(IHerculesEventBuilderProvider))
         {
@@ -110,5 +105,6 @@ internal static class ExposedApi
             _ => null
         })
         .OfType<ITypeBuilder>()
+        .Append(EmbeddedAttribute.Builder)
         .ToArray();
 }

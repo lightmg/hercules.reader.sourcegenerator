@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
-using Vostok.Hercules.Serializer.Generator.Core.Primitives;
+using SourceGenerator.Core.Builders.Types;
+using SourceGenerator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Mapping.Vector;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;

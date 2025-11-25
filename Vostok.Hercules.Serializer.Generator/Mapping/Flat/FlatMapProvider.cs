@@ -1,4 +1,4 @@
-﻿using Vostok.Hercules.Serializer.Generator.Core.Primitives;
+﻿using SourceGenerator.Core.Primitives;
 using Vostok.Hercules.Serializer.Generator.Mapping.Abstract;
 using Vostok.Hercules.Serializer.Generator.Services;
 

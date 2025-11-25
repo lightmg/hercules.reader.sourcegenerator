@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Types.Abstract;
-using Vostok.Hercules.Serializer.Generator.Core.Writer;
-using Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
+using SourceGenerator.Core.Builders.Types.Abstract;
+using SourceGenerator.Core.Writer;
+using SourceGenerator.Core.Writer.Extensions;
 
 namespace Vostok.Hercules.Serializer.Generator.Extensions;
 

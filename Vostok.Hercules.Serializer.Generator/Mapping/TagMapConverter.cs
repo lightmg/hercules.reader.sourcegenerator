@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.CodeAnalysis;
-using Vostok.Hercules.Serializer.Generator.Core.Primitives;
+using SourceGenerator.Core.Primitives;
 
 namespace Vostok.Hercules.Serializer.Generator.Mapping;
 

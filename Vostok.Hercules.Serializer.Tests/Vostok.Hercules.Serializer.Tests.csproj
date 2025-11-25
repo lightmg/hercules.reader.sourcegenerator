@@ -21,6 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\SourceGenerator.Core\SourceGenerator.Core.csproj" />
         <ProjectReference Include="..\Vostok.Hercules.Serializer.Generator\Vostok.Hercules.Serializer.Generator.csproj" />
     </ItemGroup>
 

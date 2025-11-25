@@ -1,10 +1,10 @@
 ﻿using System.Linq;
 using Microsoft.CodeAnalysis;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Declarations.Extensions;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Members;
-using Vostok.Hercules.Serializer.Generator.Core.Builders.Types;
-using Vostok.Hercules.Serializer.Generator.Core.Primitives;
-using Vostok.Hercules.Serializer.Generator.Core.Writer.Extensions;
+using SourceGenerator.Core.Builders.Declarations.Extensions;
+using SourceGenerator.Core.Builders.Members;
+using SourceGenerator.Core.Builders.Types;
+using SourceGenerator.Core.Primitives;
+using SourceGenerator.Core.Writer.Extensions;
 
 namespace Vostok.Hercules.Serializer.Generator.Services;
 
